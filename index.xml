@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>My New Hugo Project_kk</title>
+		<link>https://betraymenow.github.io/</link>
+		<description>Recent content on My New Hugo Project_kk</description>
+		<generator>Hugo</generator>
+		<language>en-us</language>
+		
+		
+		
+		
+			<lastBuildDate>Wed, 27 May 2026 17:14:36 +0900</lastBuildDate>
+		
+			<atom:link href="https://betraymenow.github.io/index.xml" rel="self" type="application/rss+xml" />
+			<item>
+				<title>Github Test 테스트 해보장</title>
+				<link>https://betraymenow.github.io/posts/github-test/</link>
+				<pubDate>Wed, 27 May 2026 17:14:36 +0900</pubDate>
+				<guid>https://betraymenow.github.io/posts/github-test/</guid>
+				<description></description>
+			</item>
+			<item>
+				<title>My First Postㅎㅎ</title>
+				<link>https://betraymenow.github.io/posts/my-first-post/</link>
+				<pubDate>Wed, 27 May 2026 15:57:48 +0900</pubDate>
+				<guid>https://betraymenow.github.io/posts/my-first-post/</guid>
+				<description></description>
+			</item>
+	</channel>
+</rss>

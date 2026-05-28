@@ -10,11 +10,18 @@
 		
 		
 		
-			<lastBuildDate>Wed, 27 May 2026 17:14:36 +0900</lastBuildDate>
+			<lastBuildDate>Thu, 28 May 2026 12:02:10 +0900</lastBuildDate>
 		
 			<atom:link href="https://betraymenow.github.io/index.xml" rel="self" type="application/rss+xml" />
 			<item>
-				<title>Github Test 테스트 해보장</title>
+				<title>Touch 명령어</title>
+				<link>https://betraymenow.github.io/posts/touch-%EB%AA%85%EB%A0%B9%EC%96%B4/</link>
+				<pubDate>Thu, 28 May 2026 12:02:10 +0900</pubDate>
+				<guid>https://betraymenow.github.io/posts/touch-%EB%AA%85%EB%A0%B9%EC%96%B4/</guid>
+				<description></description>
+			</item>
+			<item>
+				<title>Github Test 테스트</title>
 				<link>https://betraymenow.github.io/posts/github-test/</link>
 				<pubDate>Wed, 27 May 2026 17:14:36 +0900</pubDate>
 				<guid>https://betraymenow.github.io/posts/github-test/</guid>

@@ -18,7 +18,7 @@
 				<link>https://betraymenow.github.io/posts/test2/</link>
 				<pubDate>Thu, 28 May 2026 13:32:46 +0900</pubDate>
 				<guid>https://betraymenow.github.io/posts/test2/</guid>
-				<description></description>
+				<description>&lt;p&gt;빌드: hugo 명령어를 실행하면 .md 파일들이 전부 일반 HTML 파일로 변환되며 public 폴더에 저장됩니다.&#xA;배포: 이 public 폴더를 GitHub Pages나 Vercel, Netlify 같은 무료 호스팅 서비스에 업로드하면 나만의 웹사이트 주소가 발급됩니다.&lt;/p&gt;</description>
 			</item>
 			<item>
 				<title>Github Test 123</title>

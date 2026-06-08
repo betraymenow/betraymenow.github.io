@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VS Code SQLite 설치 & 연결 플로우차트</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0a0e13;
+    --surface: #111820;
+    --surface2: #1a2332;
+    --border: #243040;
+    --blue: #4d9fff;
+    --green: #43c97e;
+    --orange: #ff9d4d;
+    --purple: #b57aff;
+    --red: #ff6b6b;
+    --yellow: #ffd166;
+    --text: #dde6f0;
+    --muted: #7a95b0;
+    --arrow: #3a7abf;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    padding: 40px 20px 80px;
+    min-height: 100vh;
+  }
+
+  /* ── 헤더 ── */
+  header {
+    text-align: center;
+    margin-bottom: 52px;
+    animation: fadeDown .6s ease both;
+  }
+  header h1 { font-size: 1.45rem; font-weight: 700; letter-spacing: -.4px; }
+  header p  { font-size: .78rem; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-top: 5px; }
+
+  /* ── 흐름 컨테이너 ── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 660px;
+    margin: 0 auto;
+    gap: 0;
+  }
+
+  /* ── 섹션 구분 라벨 ── */
+  .phase-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0 14px;
+    animation: fadeIn .5s ease both;
+  }
+  .phase-bar .pill {
+    font-size: .68rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .phase-bar hr { flex: 1; border: none; height: 1px; }
+
+  .ph-ext  .pill { background: #12243a; color: var(--blue);   border: 1px solid var(--blue)66; }
+  .ph-node .pill { background: #1e2a14; color: var(--green);  border: 1px solid var(--green)66; }
+  .ph-db   .pill { background: #2a1f12; color: var(--orange); border: 1px solid var(--orange)66; }
+
+  .ph-ext  hr { background: linear-gradient(90deg, var(--blue)55, transparent); }
+  .ph-node hr { background: linear-gradient(90deg, var(--green)55, transparent); }
+  .ph-db   hr { background: linear-gradient(90deg, var(--orange)55, transparent); }
+
+  /* ── 기본 노드 ── */
+  .node {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px 16px 13px 20px;
+    position: relative;
+    transition: transform .18s, box-shadow .18s;
+    animation: slideUp .45s ease both;
+  }
+  .node:hover { transform: translateY(-2px); box-shadow: 0 8px 28px #00000055; }
+
+  .node::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 10px 0 0 10px;
+  }
+  .node.c-blue   { border-color: var(--blue)44;   } .node.c-blue::before   { background: var(--blue); }
+  .node.c-green  { border-color: var(--green)44;  } .node.c-green::before  { background: var(--green); }
+  .node.c-orange { border-color: var(--orange)44; } .node.c-orange::before { background: var(--orange); }
+  .node.c-purple { border-color: var(--purple)44; } .node.c-purple::before { background: var(--purple); }
+  .node.c-yellow { border-color: var(--yellow)44; } .node.c-yellow::before { background: var(--yellow); }
+  .node.c-red    { border-color: var(--red)44;    } .node.c-red::before    { background: var(--red); }
+
+  .node-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .node-icon { font-size: .95rem; line-height: 1; }
+  .node-title {
+    font-size: .86rem;
+    font-weight: 700;
+  }
+  .c-blue   .node-title { color: var(--blue); }
+  .c-green  .node-title { color: var(--green); }
+  .c-orange .node-title { color: var(--orange); }
+  .c-purple .node-title { color: var(--purple); }
+  .c-yellow .node-title { color: var(--yellow); }
+  .c-red    .node-title { color: var(--red); }
+
+  .node-body {
+    font-size: .76rem;
+    color: var(--muted);
+    line-height: 1.75;
+    padding-left: 2px;
+  }
+  .node-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .71rem;
+    background: #ffffff0d;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #ffa657;
+  }
+  .node-body strong { color: var(--text); font-weight: 600; }
+
+  /* ── 스텝 리스트 ── */
+  .steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .steps li {
+    display: flex;
+    gap: 8px;
+    font-size: .75rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .63rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    margin-top: 1px;
+  }
+  .c-green  .step-num { color: var(--green);  border-color: var(--green)44; }
+  .c-orange .step-num { color: var(--orange); border-color: var(--orange)44; }
+
+  /* ── 확장팩 카드 그리드 ── */
+  .ext-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .ext-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 10px 8px;
+    text-align: center;
+    transition: border-color .2s;
+  }
+  .ext-card:hover { border-color: var(--blue)88; }
+  .ext-card .ec-icon { font-size: 1.4rem; margin-bottom: 4px; }
+  .ext-card .ec-name {
+    font-size: .68rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .ext-card .ec-sub {
+    font-size: .62rem;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── 화살표 ── */
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 3px 0;
+  }
+  .arrow-line {
+    width: 2px;
+    height: 22px;
+    background: linear-gradient(to bottom, var(--arrow)88, var(--arrow));
+  }
+  .arrow-head {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--arrow);
+  }
+  .arrow-lbl {
+    font-size: .63rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    margin: -1px 0 2px;
+  }
+
+  /* ── 다이아몬드 분기 ── */
+  .diamond-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 2px 0;
+    animation: slideUp .45s ease both;
+  }
+  .diamond {
+    width: 118px;
+    height: 118px;
+    background: var(--surface);
+    border: 2px solid var(--yellow);
+    border-radius: 8px;
+    transform: rotate(45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 22px var(--yellow)22;
+    flex-shrink: 0;
+  }
+  .diamond-inner {
+    transform: rotate(-45deg);
+    text-align: center;
+    padding: 6px;
+  }
+  .diamond-inner span {
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--yellow);
+    line-height: 1.45;
+  }
+  .branch-row {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .branch {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .blabel {
+    font-size: .66rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    padding: 2px 9px;
+    border-radius: 4px;
+  }
+  .blabel.y { color: var(--green);  background: #1a3a2a; border: 1px solid var(--green)44; }
+  .blabel.n { color: var(--red);    background: #2d1818; border: 1px solid var(--red)44; }
+
+  /* ── 인라인 배지 ── */
+  .badge {
+    font-size: .62rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+  .badge.w { background: #2d2200; color: var(--yellow); border: 1px solid var(--yellow)44; }
+  .badge.t { background: #12243a; color: var(--blue);   border: 1px solid var(--blue)44; }
+  .badge.ok{ background: #1a3a2a; color: var(--green);  border: 1px solid var(--green)44; }
+
+  /* ── 노트 박스 ── */
+  .note {
+    width: 100%;
+    background: #141c26;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: .74rem;
+    color: var(--muted);
+    line-height: 1.75;
+  }
+  .note strong { color: var(--yellow); }
+  .note code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem;
+    background: #ffffff0d;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 4px;
+    color: #ffa657;
+  }
+
+  /* ── 캡슐 시작/종료 ── */
+  .capsule {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 30px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: .85rem;
+    animation: slideUp .4s ease both;
+  }
+  .capsule.start {
+    background: linear-gradient(135deg, #122438, #0e1c2e);
+    border: 2px solid var(--blue);
+    color: var(--blue);
+    box-shadow: 0 0 20px var(--blue)22;
+  }
+  .capsule.end {
+    background: linear-gradient(135deg, #152d1e, #0f2218);
+    border: 2px solid var(--green);
+    color: var(--green);
+    box-shadow: 0 0 20px var(--green)22;
+  }
+
+  /* ── 애니메이션 ── */
+  @keyframes fadeDown {
+    from { opacity:0; transform:translateY(-14px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity:0; } to { opacity:1; }
+  }
+  @keyframes slideUp {
+    from { opacity:0; transform:translateY(10px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .ext-grid { grid-template-columns: 1fr 1fr; }
+    .diamond { width: 100px; height: 100px; }
+    .diamond-inner span { font-size: .63rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗄️ VS Code × SQLite 설치 & 연결 플로우</h1>
+  <p>extensions · node.js · sqltools · windows</p>
+</header>
+
+<div class="flow">
+
+  <div class="capsule start">▶ 시작</div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ══════════════ PHASE 1 ══════════════ -->
+  <div class="phase-bar ph-ext" style="width:100%">
+    <span class="pill">Phase 1</span>
+    <span style="font-size:.77rem;color:var(--muted)">SQLite 확장팩 설치</span>
+    <hr>
+  </div>
+
+  <div class="node c-blue">
+    <div class="node-head">
+      <span class="node-icon">🧩</span>
+      <span class="node-title">Extensions 탭 열기</span>
+    </div>
+    <div class="node-body">
+      좌측 사각형 아이콘 클릭 또는 <code>Ctrl+Shift+X</code>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <div class="node c-blue">
+    <div class="node-head">
+      <span class="node-icon">🔍</span>
+      <span class="node-title">확장팩 3종 순서대로 검색 & 설치</span>
+    </div>
+    <div class="node-body">
+      <div class="ext-grid">
+        <div class="ext-card">
+          <div class="ec-icon">🛠️</div>
+          <div class="ec-name">SQLTools</div>
+          <div class="ec-sub">1순위</div>
+        </div>
+        <div class="ext-card">
+          <div class="ec-icon">🔗</div>
+          <div class="ec-name">SQLTools SQLite</div>
+          <div class="ec-sub">2순위</div>
+        </div>
+        <div class="ext-card">
+          <div class="ec-icon">👁️</div>
+          <div class="ec-name">SQLite Viewer</div>
+          <div class="ec-sub">3순위</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ══════════════ PHASE 2 ══════════════ -->
+  <div class="phase-bar ph-node" style="width:100%">
+    <span class="pill">Phase 2</span>
+    <span style="font-size:.77rem;color:var(--muted)">Node.js 설치 (Windows)</span>
+    <hr>
+  </div>
+
+  <div class="node c-green">
+    <div class="node-head">
+      <span class="node-icon">🌐</span>
+      <span class="node-title">Node.js 공식 사이트 접속 & 다운로드</span>
+    </div>
+    <div class="node-body">
+      Windows Installer <code>.msi</code> 다운로드
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <div class="node c-green">
+    <div class="node-head">
+      <span class="node-icon">⚙️</span>
+      <span class="node-title">설치 진행 — 옵션 체크</span>
+    </div>
+    <div class="node-body">
+      <ul class="steps">
+        <li><span class="step-num">1</span><span><code>.msi</code> 파일 실행</span></li>
+        <li>
+          <span class="step-num">2</span>
+          <span><strong>"Automatically install the necessary tools"</strong> 체크박스 <strong>반드시 선택</strong> <span class="badge w">필수</span><br>
+          → Chocolatey 포함 도구 자동 설치</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span><strong>"Add to PATH"</strong> 옵션 선택 확인 <span class="badge w">필수</span><br>
+          → 환경 변수 자동 설정</span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span>파란색 PowerShell 창 등장 시 <strong>아무 키(Enter)</strong> 입력</span>
+        </li>
+        <li>
+          <span class="step-num">5</span>
+          <span>설치 완료 후 <strong>컴퓨터 재시작</strong> <span class="badge w">필수</span></span>
+        </li>
+        <li>
+          <span class="step-num">6</span>
+          <span>(선택) 재시작 후 PowerShell <strong>관리자 권한</strong>으로 실행, 지시 명령어 입력</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- 설치 확인 분기 -->
+  <div class="diamond-zone">
+    <div class="diamond">
+      <div class="diamond-inner">
+        <span>npm -v<br>버전<br>출력?</span>
+      </div>
+    </div>
+    <div class="branch-row">
+      <div class="branch">
+        <span class="blabel y">✓ 출력됨</span>
+        <div class="node c-green" style="font-size:.8rem">
+          <div class="node-head">
+            <span class="node-icon">✅</span>
+            <span class="node-title" style="font-size:.8rem">Node.js & npm 정상 설치</span>
+          </div>
+          <div class="node-body">PATH 설정 완료 → 다음 단계 진행</div>
+        </div>
+      </div>
+      <div class="branch">
+        <span class="blabel n">✗ 오류/미출력</span>
+        <div class="node c-red" style="font-size:.8rem">
+          <div class="node-head">
+            <span class="node-icon">🔁</span>
+            <span class="node-title" style="font-size:.8rem">재설치 또는 PATH 확인</span>
+          </div>
+          <div class="node-body">환경 변수 <code>PATH</code>에 Node.js 경로 수동 추가 후 재부팅</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ══════════════ PHASE 3 ══════════════ -->
+  <div class="phase-bar ph-db" style="width:100%">
+    <span class="pill">Phase 3</span>
+    <span style="font-size:.77rem;color:var(--muted)">SQLite DB 파일 생성 & 연결</span>
+    <hr>
+  </div>
+
+  <div class="node c-orange">
+    <div class="node-head">
+      <span class="node-icon">🗃️</span>
+      <span class="node-title">DB 파일 생성</span>
+    </div>
+    <div class="node-body">
+      VS Code 탐색기 빈 공간 우클릭 → <strong>New File</strong> → <code>mydb.db</code> 생성
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <div class="node c-orange">
+    <div class="node-head">
+      <span class="node-icon">🔌</span>
+      <span class="node-title">SQLTools — 새 연결 추가</span>
+    </div>
+    <div class="node-body">
+      <ul class="steps">
+        <li><span class="step-num">1</span><span>좌측 <strong>SQLTools 아이콘</strong> 클릭 → <strong>Add New Connection</strong></span></li>
+        <li><span class="step-num">2</span><span>DB 종류 → <strong>SQLite</strong> 선택</span></li>
+        <li><span class="step-num">3</span><span>Connection Name: <code>test</code> 등 임시 이름 입력</span></li>
+        <li>
+          <span class="step-num">4</span>
+          <span>터미널 <code>pwd</code>로 경로 확인 후 뒤에 <code>\mydb.db</code> 추가<br>
+          예: <code>C:\Users\YourUser\Project\mydb.db</code> <span class="badge w">백슬래시</span></span>
+        </li>
+        <li><span class="step-num">5</span><span><strong>Test Connection</strong> 클릭</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- 알림 팝업 분기 -->
+  <div class="diamond-zone">
+    <div class="diamond">
+      <div class="diamond-inner">
+        <span>우하단<br>알림<br>팝업?</span>
+      </div>
+    </div>
+    <div class="branch-row">
+      <div class="branch">
+        <span class="blabel y">✓ 팝업 있음</span>
+        <div class="node c-yellow" style="font-size:.8rem">
+          <div class="node-head">
+            <span class="node-icon">🔔</span>
+            <span class="node-title" style="font-size:.8rem">팝업 처리</span>
+          </div>
+          <div class="node-body">
+            <strong>Enable Now</strong> 또는 <strong>Install Now</strong> 클릭<br>
+            → <strong>Reload</strong> 알림 시 클릭 → VS Code 재로드<br>
+            → Test Connection 재시도
+          </div>
+        </div>
+      </div>
+      <div class="branch">
+        <span class="blabel n">✗ 팝업 없음</span>
+        <div class="node c-green" style="font-size:.8rem">
+          <div class="node-head">
+            <span class="node-icon">▶</span>
+            <span class="node-title" style="font-size:.8rem">결과 확인</span>
+          </div>
+          <div class="node-body">바로 연결 결과 확인</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- 연결 성공 분기 -->
+  <div class="diamond-zone">
+    <div class="diamond">
+      <div class="diamond-inner">
+        <span>"Successfully<br>connected"<br>표시?</span>
+      </div>
+    </div>
+    <div class="branch-row">
+      <div class="branch">
+        <span class="blabel y">✓ 성공</span>
+        <div class="node c-green" style="font-size:.8rem">
+          <div class="node-head">
+            <span class="node-icon">💾</span>
+            <span class="node-title" style="font-size:.8rem">Save Connection</span>
+          </div>
+          <div class="node-body">
+            <strong>Save Connection</strong> 클릭 → 연결 설정 저장 완료
+          </div>
+        </div>
+      </div>
+      <div class="branch">
+        <span class="blabel n">✗ 실패</span>
+        <div class="node c-red" style="font-size:.8rem">
+          <div class="node-head">
+            <span class="node-icon">🔍</span>
+            <span class="node-title" style="font-size:.8rem">경로 & Node.js 재확인</span>
+          </div>
+          <div class="node-body">
+            경로 오타·공백·슬래시 방향 점검<br>
+            <code>npm -v</code> 재확인 후 Phase 2부터 재시도
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <div class="note">
+    <strong>💡 핵심 체크리스트</strong><br>
+    ① 확장팩 3종 모두 설치 → ② Node.js 설치 시 <code>Add to PATH</code> + <code>Chocolatey</code> 체크 → ③ 재부팅 후 <code>npm -v</code> 확인 → ④ 연결 경로에 <strong>백슬래시</strong>(<code>\</code>) 사용, 앞뒤 공백 제거
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <div class="capsule end">✓ 완료 — VS Code × SQLite 환경 구성 성공</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VS Code SQLite 설정 플로우차트</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --accent1: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #f78166;
+    --accent4: #d2a8ff;
+    --warn: #e3b341;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --connector: #388bfd;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px 80px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  header .sub {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .phase-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    animation: fadeIn 0.5s ease both;
+  }
+
+  .phase-label .badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .phase1 .badge { background: #1f3a5f; color: var(--accent1); border: 1px solid var(--accent1); }
+  .phase2 .badge { background: #1a3a2a; color: var(--accent2); border: 1px solid var(--accent2); }
+  .phase3 .badge { background: #2d1b3d; color: var(--accent4); border: 1px solid var(--accent4); }
+
+  .phase-label hr { flex: 1; border: none; height: 1px; }
+  .phase1 hr { background: linear-gradient(90deg, var(--accent1)44, transparent); }
+  .phase2 hr { background: linear-gradient(90deg, var(--accent2)44, transparent); }
+  .phase3 hr { background: linear-gradient(90deg, var(--accent4)44, transparent); }
+
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .section {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  /* 노드 공통 */
+  .node {
+    position: relative;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    cursor: default;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    animation: slideUp 0.5s ease both;
+  }
+
+  .node:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px #00000066;
+  }
+
+  .node-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .node-desc {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .node-desc code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.73rem;
+    background: #ffffff11;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    color: #ffa657;
+  }
+
+  .node-icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  /* 색상 테마 */
+  .node.blue  { border-left: 3px solid var(--accent1); }
+  .node.green { border-left: 3px solid var(--accent2); }
+  .node.purple{ border-left: 3px solid var(--accent4); }
+  .node.warn  { border-left: 3px solid var(--warn); }
+  .node.red   { border-left: 3px solid var(--accent3); }
+
+  .node.blue  .node-title { color: var(--accent1); }
+  .node.green .node-title { color: var(--accent2); }
+  .node.purple .node-title{ color: var(--accent4); }
+  .node.warn  .node-title { color: var(--warn); }
+  .node.red   .node-title { color: var(--accent3); }
+
+  /* 다이아몬드 분기 */
+  .diamond-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin: 4px 0;
+    animation: slideUp 0.5s ease both;
+  }
+
+  .diamond {
+    background: var(--surface);
+    border: 2px solid var(--warn);
+    transform: rotate(45deg);
+    width: 120px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    box-shadow: 0 0 20px #e3b34122;
+    transition: box-shadow 0.2s;
+    cursor: default;
+    flex-shrink: 0;
+  }
+  .diamond:hover { box-shadow: 0 0 30px #e3b34155; }
+
+  .diamond-inner {
+    transform: rotate(-45deg);
+    text-align: center;
+    padding: 4px;
+  }
+
+  .diamond-inner .q {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--warn);
+    line-height: 1.4;
+  }
+
+  .branch-row {
+    display: flex;
+    width: 100%;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .branch {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .branch-label {
+    font-size: 0.68rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 2px;
+  }
+
+  .yes { color: var(--accent2); background: #1a3a2a; border: 1px solid var(--accent2)55; }
+  .no  { color: var(--accent3); background: #2d1a1a; border: 1px solid var(--accent3)55; }
+
+  /* 화살표 커넥터 */
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+    margin: 2px 0;
+  }
+
+  .arrow-line {
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to bottom, var(--connector)88, var(--connector));
+  }
+
+  .arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--connector);
+  }
+
+  .arrow-label {
+    font-size: 0.65rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+    margin-top: -2px;
+    margin-bottom: 2px;
+  }
+
+  /* 시작/종료 캡슐 */
+  .capsule {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 28px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.3px;
+    animation: slideUp 0.4s ease both;
+  }
+
+  .capsule.start {
+    background: linear-gradient(135deg, #1f3a5f, #163150);
+    border: 2px solid var(--accent1);
+    color: var(--accent1);
+    box-shadow: 0 0 20px #58a6ff33;
+  }
+
+  .capsule.end {
+    background: linear-gradient(135deg, #1a3a2a, #122a1e);
+    border: 2px solid var(--accent2);
+    color: var(--accent2);
+    box-shadow: 0 0 20px #3fb95033;
+  }
+
+  /* 태그 뱃지 */
+  .tag {
+    font-size: 0.63rem;
+    font-family: 'JetBrains Mono', monospace;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .tag.tip { background: #1f3a5f; color: var(--accent1); }
+  .tag.warn{ background: #2d2200; color: var(--warn); }
+  .tag.ok  { background: #1a3a2a; color: var(--accent2); }
+
+  /* 노트 박스 */
+  .note {
+    background: #1c2128;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+    width: 100%;
+  }
+  .note strong { color: var(--warn); }
+  .note code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.71rem;
+    background: #ffffff0d;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 4px;
+    color: #ffa657;
+  }
+
+  /* 애니메이션 */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; } to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .node { animation-delay: calc(var(--i, 0) * 0.05s); }
+
+  /* 반응형 */
+  @media (max-width: 500px) {
+    .diamond { width: 100px; height: 100px; }
+    .diamond-inner .q { font-size: 0.64rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗄️ VS Code × SQLite 초기 설정 플로우</h1>
+  <p class="sub">vscode · sqlite · sql-tools · windows</p>
+</header>
+
+<div class="flow">
+
+  <!-- START -->
+  <div class="capsule start">▶ 시작</div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ───── PHASE 1 ───── -->
+  <div class="section">
+    <div class="phase-label phase1">
+      <span class="badge">Phase 1</span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">폴더 및 파일 생성</span>
+      <hr>
+    </div>
+
+    <div class="node blue" style="--i:1">
+      <div class="node-title"><span class="node-icon">📁</span> C 드라이브에 폴더 생성</div>
+      <div class="node-desc">
+        <code>C:\test0608</code> 폴더 새로 생성
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node blue" style="--i:2">
+      <div class="node-title"><span class="node-icon">📂</span> VS Code에서 폴더 열기</div>
+      <div class="node-desc">
+        <strong>File → Open Folder</strong>로 <code>test0608</code> 폴더만 선택
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node blue" style="--i:3">
+      <div class="node-title"><span class="node-icon">🗃️</span> DB 파일 생성</div>
+      <div class="node-desc">
+        New File로 <code>myDB.db</code> 생성 (내용 비워도 됨, 파일 존재 확인)
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node blue" style="--i:4">
+      <div class="node-title"><span class="node-icon">✅</span> Explorer & 터미널 확인</div>
+      <div class="node-desc">
+        좌측 Explorer에 <code>myDB.db</code> 표시 확인<br>
+        PowerShell <code>pwd</code> → 경로에 <code>test0608</code> 포함 여부 확인
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ───── PHASE 2 ───── -->
+  <div class="section">
+    <div class="phase-label phase2">
+      <span class="badge">Phase 2</span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">확장 설치 및 연결 생성</span>
+      <hr>
+    </div>
+
+    <div class="node green" style="--i:5">
+      <div class="node-title"><span class="node-icon">🔌</span> SQL 확장 패널 열기</div>
+      <div class="node-desc">
+        좌측 패널 → <strong>SQL 필수(SQL Tools)</strong> 클릭 → <strong>Edu New Connection</strong> 선택
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node green" style="--i:6">
+      <div class="node-title"><span class="node-icon">🏷️</span> DB 유형 & 연결 이름 설정</div>
+      <div class="node-desc">
+        DB 유형: <strong>SQLite</strong> 선택<br>
+        Connection Name: 데이터베이스명과 동일하게 입력 (예: <code>mydb</code>)
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node warn" style="--i:7">
+      <div class="node-title"><span class="node-icon">⚠️</span> 연결 경로 입력 <span class="tag warn">주의</span></div>
+      <div class="node-desc">
+        Windows: 백슬래시 <code>\</code> 사용 → <code>C:\test0608\myDB.db</code><br>
+        Mac: 슬래시 <code>/</code> 사용<br>
+        경로 앞 <strong>공백 금지</strong> · 꺾쇠·오타 금지 · 혼용 금지<br>
+        드라이브 문자 <strong>대문자 C</strong> 권장
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- 분기: Test Connection -->
+    <div class="diamond-wrap">
+      <div class="diamond">
+        <div class="diamond-inner">
+          <div class="q">Test<br>Connection<br>결과?</div>
+        </div>
+      </div>
+
+      <div class="branch-row">
+        <!-- 성공 -->
+        <div class="branch">
+          <span class="branch-label yes">✓ 성공</span>
+          <div class="node green" style="--i:8; font-size:0.8rem;">
+            <div class="node-title" style="font-size:0.8rem;"><span class="node-icon">💬</span> "successfully connected" 확인</div>
+            <div class="node-desc">Save Connection 클릭 → Connect Now로 활성 연결 생성</div>
+          </div>
+        </div>
+        <!-- 실패 -->
+        <div class="branch">
+          <span class="branch-label no">✗ 실패</span>
+          <div class="node red" style="--i:9; font-size:0.8rem;">
+            <div class="node-title" style="font-size:0.8rem;"><span class="node-icon">🔁</span> 경로 재확인</div>
+            <div class="node-desc">공백·오타·슬래시 방향 점검 후 재입력</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- 팝업 분기 -->
+    <div class="diamond-wrap">
+      <div class="diamond">
+        <div class="diamond-inner">
+          <div class="q">확장 설치<br>팝업<br>여부?</div>
+        </div>
+      </div>
+      <div class="branch-row">
+        <div class="branch">
+          <span class="branch-label yes">✓ 팝업 있음</span>
+          <div class="node warn" style="--i:10; font-size:0.8rem;">
+            <div class="node-title" style="font-size:0.8rem;"><span class="node-icon">🔄</span> Enable → Reload Now</div>
+            <div class="node-desc">팝업 우하단 Enable 클릭 후 Reload Now → Phase 1부터 재수행</div>
+          </div>
+        </div>
+        <div class="branch">
+          <span class="branch-label no">✗ 팝업 없음</span>
+          <div class="node green" style="--i:11; font-size:0.8rem;">
+            <div class="node-title" style="font-size:0.8rem;"><span class="node-icon">▶</span> 다음 단계 진행</div>
+            <div class="node-desc">연결 저장 완료 → SQL 실행 단계로</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ───── PHASE 3 ───── -->
+  <div class="section">
+    <div class="phase-label phase3">
+      <span class="badge">Phase 3</span>
+      <span style="font-size:0.78rem;color:var(--text-muted)">스키마 생성 및 데이터 조회</span>
+      <hr>
+    </div>
+
+    <div class="node purple" style="--i:12">
+      <div class="node-title"><span class="node-icon">🏗️</span> 테이블 스키마 생성 실행</div>
+      <div class="node-desc">
+        <strong>Run Active Connection</strong> 사용 → CREATE TABLE 쿼리 실행<br>
+        <span class="tag warn">중복 실행 시</span> <code>"users already exist"</code> 메시지 → 정상
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node purple" style="--i:13">
+      <div class="node-title"><span class="node-icon">📥</span> 데이터 삽입 실행</div>
+      <div class="node-desc">
+        INSERT 쿼리 실행 (스키마 생성 후 순서대로)
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node purple" style="--i:14">
+      <div class="node-title"><span class="node-icon">🔍</span> 테이블 구조 확인</div>
+      <div class="node-desc">
+        좌측 SQL Tools 탐색 → <code>users</code> 테이블 존재 확인<br>
+        컬럼: <code>id</code> · <code>username</code> · <code>email</code> · <code>created</code>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <!-- 테이블 없음 분기 -->
+    <div class="diamond-wrap">
+      <div class="diamond">
+        <div class="diamond-inner">
+          <div class="q">users<br>테이블<br>표시?</div>
+        </div>
+      </div>
+      <div class="branch-row">
+        <div class="branch">
+          <span class="branch-label yes">✓ 있음</span>
+          <div class="node green" style="--i:15; font-size:0.8rem;">
+            <div class="node-title" style="font-size:0.8rem;"><span class="node-icon">▶</span> SELECT 실행</div>
+            <div class="node-desc">다음 단계 진행</div>
+          </div>
+        </div>
+        <div class="branch">
+          <span class="branch-label no">✗ 없음</span>
+          <div class="node red" style="--i:16; font-size:0.8rem;">
+            <div class="node-title" style="font-size:0.8rem;"><span class="node-icon">🔁</span> 처음부터 재실행</div>
+            <div class="node-desc">CREATE → INSERT 순서로 재수행</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="node purple" style="--i:17">
+      <div class="node-title"><span class="node-icon">🖱️</span> SELECT 쿼리 선택 실행 <span class="tag warn">주의</span></div>
+      <div class="node-desc">
+        전체 SQL 실행 ❌ → 해당 라인(예: 16번째 줄 <code>SELECT</code>)만 <strong>드래그 선택</strong> 후<br>
+        단축키 <code>Ctrl+Enter</code> → 결과 패널에서 데이터 조회 확인
+      </div>
+    </div>
+
+    <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+    <div class="note">
+      <strong>💡 실행 결과 확인 기준</strong><br>
+      결과 패널에 <code>id / username / email / created</code> 컬럼과 삽입한 행 데이터가 보이면 ✅ 완료
+    </div>
+  </div>
+
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- END -->
+  <div class="capsule end">✓ 완료 — SQLite 연결 및 데이터 조회 성공</div>
+
+</div>
+
+</body>
+</html>

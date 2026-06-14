@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOOP — AI 학습 루프 · 사전 등록</title>
+<meta name="description" content="이해와 설명이 만나는 순간, 학습은 비로소 시작된다. AI 시대의 학습 루프, LOOP — 사전 등록 시작.">
+<style>
+  :root {
+    --ink: #2D1B4E;
+    --ink-2: #5B4A7A;
+    --coral: #F4845F;
+    --gold: #FFC971;
+    --sage: #84B59F;
+    --white: #FFFFFF;
+    --bg: #FAFAFA;
+    --text: #1A1A2E;
+    --muted: #6B6B7C;
+    --border: #ECECF0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', 'Inter', sans-serif; color: var(--text); background: var(--white); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  a { color: inherit; text-decoration: none; }
+
+  /* NAV */
+  nav { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+  nav .row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; }
+  .logo { font-family: Georgia, serif; font-weight: 900; font-size: 22px; letter-spacing: 6px; color: var(--ink); }
+  .nav-cta { background: var(--ink); color: var(--white); padding: 10px 20px; border-radius: 999px; font-size: 14px; font-weight: 700; transition: all 0.2s ease; }
+  .nav-cta:hover { background: var(--coral); transform: translateY(-2px); }
+
+  /* HERO */
+  .hero { background: linear-gradient(180deg, var(--white) 0%, var(--bg) 100%); padding: 80px 0 100px; position: relative; overflow: hidden; }
+  .hero .container { position: relative; z-index: 2; }
+  .hero-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 64px; align-items: center; }
+  @media(max-width: 880px) { .hero-grid { grid-template-columns: 1fr; gap: 40px; } }
+  .hero .eyebrow { display: inline-block; background: rgba(244,132,95,0.12); color: var(--coral); font-size: 12px; font-weight: 800; letter-spacing: 3px; padding: 8px 14px; border-radius: 999px; margin-bottom: 24px; }
+  .hero h1 { font-family: Georgia, serif; font-size: clamp(36px, 5vw, 60px); font-weight: 700; line-height: 1.1; margin-bottom: 24px; letter-spacing: -1px; }
+  .hero h1 em { color: var(--coral); font-style: italic; }
+  .hero .lead { font-size: 19px; color: var(--muted); margin-bottom: 32px; max-width: 540px; }
+
+  /* SIGNUP FORM */
+  .signup { background: var(--white); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: 0 20px 60px rgba(45,27,78,0.08); }
+  .signup h3 { font-family: Georgia, serif; font-size: 22px; margin-bottom: 8px; color: var(--ink); }
+  .signup p.note { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+  .signup form { display: flex; gap: 8px; flex-wrap: wrap; }
+  .signup input { flex: 1; min-width: 220px; padding: 14px 18px; border: 1px solid var(--border); border-radius: 12px; font-size: 15px; font-family: inherit; outline: none; transition: border 0.2s ease; }
+  .signup input:focus { border-color: var(--coral); }
+  .signup button { background: var(--ink); color: var(--white); border: none; padding: 14px 24px; border-radius: 12px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
+  .signup button:hover { background: var(--coral); transform: translateY(-2px); }
+  .perks { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: var(--muted); }
+  .perks div::before { content: "✓"; color: var(--coral); font-weight: 800; margin-right: 8px; }
+  .hero-side { background: var(--ink); color: var(--white); border-radius: 24px; padding: 40px; position: relative; overflow: hidden; }
+  .hero-side::before { content: ""; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; border-radius: 50%; border: 2px solid var(--coral); opacity: 0.5; }
+  .hero-side::after { content: ""; position: absolute; bottom: -80px; left: -80px; width: 240px; height: 240px; border-radius: 50%; border: 2px solid var(--gold); opacity: 0.3; }
+  .hero-side .quote-mark { font-family: Georgia, serif; font-size: 80px; color: var(--gold); line-height: 1; opacity: 0.5; margin-bottom: -20px; }
+  .hero-side blockquote { font-family: Georgia, serif; font-size: 22px; line-height: 1.4; margin-bottom: 24px; }
+  .hero-side cite { font-style: normal; font-size: 13px; color: rgba(255,255,255,0.6); letter-spacing: 3px; }
+
+  /* COUNT STRIP */
+  .count-strip { background: var(--ink); color: var(--white); padding: 24px 0; }
+  .count-row { display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 24px; text-align: center; }
+  .count-row .item .n { font-family: Georgia, serif; font-size: 36px; font-weight: 700; color: var(--gold); display: block; line-height: 1; }
+  .count-row .item .l { font-size: 12px; color: rgba(255,255,255,0.6); letter-spacing: 2px; margin-top: 8px; display: block; }
+
+  /* SECTION */
+  section { padding: 100px 0; }
+  .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 6px; color: var(--coral); text-transform: uppercase; margin-bottom: 16px; }
+  h2 { font-family: Georgia, serif; font-size: clamp(28px, 4vw, 44px); line-height: 1.2; margin-bottom: 16px; letter-spacing: -0.5px; }
+  .sub { color: var(--muted); font-size: 17px; max-width: 640px; margin-bottom: 56px; }
+
+  /* PROBLEM */
+  .problem { background: var(--bg); }
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media(max-width: 720px) { .stat-row { grid-template-columns: 1fr; } }
+  .stat-card { background: var(--white); border-radius: 16px; padding: 32px; border: 1px solid var(--border); transition: all 0.25s ease; }
+  .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(45,27,78,0.08); }
+  .stat-card .n { font-family: Georgia, serif; font-size: 56px; font-weight: 700; color: var(--coral); line-height: 1; margin-bottom: 16px; }
+  .stat-card h4 { font-family: Georgia, serif; font-size: 20px; margin-bottom: 8px; color: var(--ink); }
+  .stat-card p { color: var(--muted); font-size: 14px; }
+
+  /* PRODUCT (7 STEPS) */
+  .method-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  @media(max-width: 720px) { .method-grid { grid-template-columns: 1fr; } }
+  .m-card { padding: 24px; border-radius: 16px; border: 1px solid var(--border); background: var(--white); transition: all 0.3s ease; cursor: default; }
+  .m-card:hover { border-color: var(--coral); transform: translateY(-3px); box-shadow: 0 10px 30px rgba(244,132,95,0.15); }
+  .m-card .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .m-card .num { font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: var(--coral); }
+  .m-card .stars { color: var(--gold); letter-spacing: 1px; font-size: 13px; }
+  .m-card h4 { font-family: Georgia, serif; font-size: 22px; margin-bottom: 6px; color: var(--ink); }
+  .m-card .prompt { color: var(--muted); font-size: 14px; font-style: italic; margin-bottom: 8px; }
+  .m-card .effect { color: var(--text); font-size: 14px; }
+
+  /* HOW IT WORKS */
+  .how { background: var(--ink); color: var(--white); }
+  .how h2, .how .sub { color: var(--white); }
+  .how .eyebrow { color: var(--gold); }
+  .how .sub { color: rgba(255,255,255,0.7); }
+  .steps-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  @media(max-width: 720px) { .steps-3 { grid-template-columns: 1fr; } }
+  .step-3 { padding: 32px; background: rgba(255,255,255,0.05); border-radius: 16px; border-left: 4px solid var(--coral); }
+  .step-3:nth-child(2) { border-left-color: var(--gold); }
+  .step-3:nth-child(3) { border-left-color: var(--sage); }
+  .step-3 .n { font-family: Georgia, serif; font-size: 14px; letter-spacing: 4px; color: var(--gold); margin-bottom: 12px; }
+  .step-3 h4 { font-family: Georgia, serif; font-size: 24px; margin-bottom: 12px; }
+  .step-3 p { color: rgba(255,255,255,0.7); font-size: 15px; }
+
+  /* FOUNDER NOTE */
+  .founder { background: var(--bg); }
+  .founder-card { background: var(--white); border-radius: 24px; padding: 56px; box-shadow: 0 20px 60px rgba(45,27,78,0.06); border: 1px solid var(--border); display: grid; grid-template-columns: 120px 1fr; gap: 32px; align-items: start; }
+  @media(max-width: 720px) { .founder-card { grid-template-columns: 1fr; padding: 32px; } }
+  .founder-avatar { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--coral), var(--gold)); display: flex; align-items: center; justify-content: center; color: var(--white); font-family: Georgia, serif; font-size: 48px; font-weight: 700; }
+  .founder p { font-size: 16px; color: var(--text); margin-bottom: 14px; }
+  .founder .sig { font-family: Georgia, serif; font-style: italic; color: var(--ink-2); font-size: 14px; margin-top: 20px; }
+
+  /* FAQ */
+  .faq-list { display: grid; gap: 12px; }
+  .faq { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; cursor: pointer; transition: all 0.2s ease; }
+  .faq:hover { border-color: var(--coral); }
+  .faq .q { font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: var(--ink); display: flex; justify-content: space-between; }
+  .faq .q::after { content: "+"; color: var(--coral); font-size: 22px; transition: transform 0.25s ease; }
+  .faq.open .q::after { transform: rotate(45deg); }
+  .faq .a { color: var(--muted); font-size: 15px; margin-top: 12px; display: none; }
+  .faq.open .a { display: block; }
+
+  /* FINAL CTA */
+  .final-cta { background: linear-gradient(135deg, var(--ink) 0%, #4A2D7A 100%); color: var(--white); text-align: center; padding: 100px 0; position: relative; overflow: hidden; }
+  .final-cta::before { content: ""; position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; border-radius: 50%; border: 3px solid var(--coral); opacity: 0.2; }
+  .final-cta::after { content: ""; position: absolute; bottom: -150px; left: -150px; width: 500px; height: 500px; border-radius: 50%; border: 3px solid var(--gold); opacity: 0.15; }
+  .final-cta .container { position: relative; z-index: 2; }
+  .final-cta h2 { color: var(--white); margin-bottom: 16px; }
+  .final-cta p { color: rgba(255,255,255,0.75); font-size: 18px; margin-bottom: 32px; }
+  .final-cta form { max-width: 480px; margin: 0 auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .final-cta input { flex: 1; min-width: 200px; padding: 16px 20px; border: none; border-radius: 12px; font-size: 16px; font-family: inherit; outline: none; }
+  .final-cta button { background: var(--coral); color: var(--white); border: none; padding: 16px 28px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
+  .final-cta button:hover { background: var(--gold); color: var(--ink); transform: translateY(-2px); }
+
+  /* SUCCESS STATE */
+  .success { display: none; background: rgba(132,181,159,0.15); border: 1px solid var(--sage); padding: 16px; border-radius: 12px; margin-top: 16px; text-align: center; color: var(--sage); font-weight: 700; }
+  .success.show { display: block; }
+
+  /* FOOTER */
+  footer { background: var(--ink); color: rgba(255,255,255,0.45); padding: 48px 0 32px; text-align: center; font-size: 13px; }
+  footer .brand-foot { font-family: Georgia, serif; color: var(--white); font-size: 24px; font-weight: 900; letter-spacing: 8px; margin-bottom: 16px; }
+  footer .links { display: flex; justify-content: center; gap: 24px; margin: 16px 0; }
+  footer .links a:hover { color: var(--gold); }
+  footer .copy { margin-top: 24px; opacity: 0.6; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="container row">
+    <div class="logo">LOOP</div>
+    <a class="nav-cta" href="#signup">사전 등록 →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">🍀 SEED 사용자 모집 중 · 2026 Q3 오픈</div>
+        <h1>이해와 <em>설명</em>이 만나는<br>순간, 학습은 시작된다.</h1>
+        <p class="lead">LOOP는 AI를 \"답변 기계\"가 아닌 <strong>사유의 외부화 엔진</strong>으로 사용하도록 설계된 학습 파트너입니다. 흐릿한 이해를 표·그림·비유·관점으로 즉시 옮기고, 설명하면서 더 깊이 배우게 합니다.</p>
+
+        <div class="signup" id="signup">
+          <h3>사전 등록하고 평생 50% 할인 받기</h3>
+          <p class="note">베타 1,000명 한정. 출시 즉시 알림 + Pro 플랜 50% 평생 할인.</p>
+          <form id="early-form" onsubmit="return submitEarly(event,'top')">
+            <input type="email" placeholder="이메일을 입력하세요" required>
+            <button type="submit">등록하기</button>
+          </form>
+          <div class="success" id="success-top">🍀 등록되었습니다. 출시 소식을 가장 먼저 보내드릴게요.</div>
+          <div class="perks">
+            <div>출시 전 비공개 베타 초대권</div>
+            <div>Pro 플랜 평생 50% 할인</div>
+            <div>창업자 직접 운영 Discord 초대</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-side">
+        <div class="quote-mark">"</div>
+        <blockquote>AI는 답을 알려주는 도구가 아니라, 머릿속의 흐릿한 생각을 구조·그림·비유·모델로 외부화해주는 작업대다.</blockquote>
+        <cite>LOOP MANIFESTO</cite>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COUNT STRIP -->
+<div class="count-strip">
+  <div class="container">
+    <div class="count-row">
+      <div class="item"><span class="n">1,247</span><span class="l">사전 등록자</span></div>
+      <div class="item"><span class="n">23일</span><span class="l">베타 오픈까지</span></div>
+      <div class="item"><span class="n">7단계</span><span class="l">학습 메소드</span></div>
+      <div class="item"><span class="n">50%</span><span class="l">평생 할인 (한정)</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="container">
+    <div class="eyebrow">Why LOOP</div>
+    <h2>당신이 \"안다고 생각한 것\"의<br>95%는 설명하면 무너집니다.</h2>
+    <p class="sub">대부분의 학습자는 \"이해\" 단계에서 멈춥니다. 진짜 학습은 그 다음, \"설명할 수 있을 때\" 시작됩니다.</p>
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="n">95%</div>
+        <h4>안다는 착각</h4>
+        <p>학습자의 95%가 \"이해했다\"고 답하지만, 다른 사람에게 설명하라고 하면 막힙니다.</p>
+      </div>
+      <div class="stat-card">
+        <div class="n">80%</div>
+        <h4>6개월 휘발</h4>
+        <p>구조화·시각화·설명 단계 없이 입력만 한 정보는 6개월 안에 80%가 사라집니다.</p>
+      </div>
+      <div class="stat-card">
+        <div class="n">3.1x</div>
+        <h4>설명할 때 깊어진다</h4>
+        <p>가르치려고 학습한 사람은 동일 시간 대비 개념 유지율이 3.1배 높습니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT 7 STEPS -->
+<section>
+  <div class="container">
+    <div class="eyebrow">The Method</div>
+    <h2>7단계 AI 활용법.<br>한 단계씩 사고가 깊어집니다.</h2>
+    <p class="sub">단순한 프롬프트 모음이 아닙니다. 학습 효과가 검증된 인지 단계별로 설계된 사다리입니다.</p>
+
+    <div class="method-grid">
+      <div class="m-card">
+        <div class="head"><span class="num">① 구조화</span><span class="stars">⭐⭐</span></div>
+        <h4>표·분류로 정리한다</h4>
+        <div class="prompt">"이 내용을 표로 정리해줘"</div>
+        <div class="effect">정보 → 지식 전환의 첫 단계. 빈 칸이 무엇을 모르는지 보여줍니다.</div>
+      </div>
+      <div class="m-card">
+        <div class="head"><span class="num">② 시각화</span><span class="stars">⭐⭐⭐</span></div>
+        <h4>플로우차트·인포그래픽</h4>
+        <div class="prompt">"플로우차트로 그려줘"</div>
+        <div class="effect">텍스트→이미지 변환. 시각 정보 기반 기억이 강화됩니다.</div>
+      </div>
+      <div class="m-card">
+        <div class="head"><span class="num">③ 비유화</span><span class="stars">⭐⭐⭐⭐</span></div>
+        <h4>다른 영역의 언어로</h4>
+        <div class="prompt">"중학생도 이해할 수 있게 / 축구로 비유해줘"</div>
+        <div class="effect">\"안다는 착각\"이 무너지는 지점. 비유 못 하면 사실 모르는 것.</div>
+      </div>
+      <div class="m-card">
+        <div class="head"><span class="num">④ 관점화</span><span class="stars">⭐⭐⭐⭐⭐</span></div>
+        <h4>해석 프레임 입히기</h4>
+        <div class="prompt">"환원주의 관점에서 / 경제학 관점에서"</div>
+        <div class="effect">사고가 단선에서 입체로. 같은 개념도 완전히 다르게 보입니다.</div>
+      </div>
+      <div class="m-card">
+        <div class="head"><span class="num">⑤ 연결화</span><span class="stars">⭐⭐⭐⭐⭐⭐</span></div>
+        <h4>개념 간 그물망</h4>
+        <div class="prompt">"이 개념과 저 개념의 관계는?"</div>
+        <div class="effect">학습이 \"암기 → 이해\"에서 \"이해 → 통합\"으로 넘어가는 분기점.</div>
+      </div>
+      <div class="m-card">
+        <div class="head"><span class="num">⑥ 창조화</span><span class="stars">⭐⭐⭐⭐⭐⭐⭐</span></div>
+        <h4>새 모델 만들기</h4>
+        <div class="prompt">"이 개념을 활용한 새 아이디어"</div>
+        <div class="effect">소비자에서 생산자로의 전환점. AI 학습이 AI 창작이 됩니다.</div>
+      </div>
+      <div class="m-card" style="grid-column: 1 / -1;">
+        <div class="head"><span class="num">⑦ 검증화</span><span class="stars">⭐⭐⭐⭐⭐⭐⭐</span></div>
+        <h4>내 설명의 빈틈을 AI가 점검</h4>
+        <div class="prompt">"내가 설명한 내용의 빈틈을 찾아줘"</div>
+        <div class="effect">역할 반전. 학습자가 설명하고 AI가 평가합니다. 가장 큰 학습은 여기서 일어납니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="container">
+    <div class="eyebrow">How LOOP Works</div>
+    <h2>이해 ↔ 설명의 순환을<br>3개의 엔진으로 가속합니다.</h2>
+    <p class="sub">단순한 챗봇이 아닙니다. 사고를 외부화하고, 다관점을 부여하고, 설명을 검증하는 통합 환경입니다.</p>
+
+    <div class="steps-3">
+      <div class="step-3">
+        <div class="n">ENGINE 01</div>
+        <h4>사고의 외부화</h4>
+        <p>흐릿한 생각을 표·그림·비유로 즉시 변환. 디자인 역량 없이도 \"한 장 자료\"를 10초 안에 만듭니다.</p>
+      </div>
+      <div class="step-3">
+        <div class="n">ENGINE 02</div>
+        <h4>관점 다중화</h4>
+        <p>동일 개념에 5개 이상의 해석 프레임을 자동 부여. 단선 사고를 입체 사고로 강제 전환합니다.</p>
+      </div>
+      <div class="step-3">
+        <div class="n">ENGINE 03</div>
+        <h4>설명 가능성 검증</h4>
+        <p>학습자가 설명하고 AI가 빈틈을 점검. \"안다는 착각\"을 정밀하게 깨뜨립니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOUNDER NOTE -->
+<section class="founder">
+  <div class="container">
+    <div class="eyebrow">From the Founder</div>
+    <h2>왜 지금, LOOP인가</h2>
+    <div class="founder-card" style="margin-top:40px">
+      <div class="founder-avatar">🍀</div>
+      <div>
+        <p>예전에는 \"학습 → (오랜 시간 뒤) → 설명\"이라는 긴 거리가 있었습니다. 표 만들기·다이어그램·인포그래픽·비유 — 번역 비용이 너무 컸기 때문에 99%의 학습자가 \"이해\" 단계에서 멈췄습니다.</p>
+        <p>AI는 이 번역 비용을 0에 가깝게 만들었습니다. 이제 학습과 설명은 동시에 일어날 수 있습니다. 설명하기 위해 이해하고, 이해하기 위해 설명하는 순환이 생깁니다.</p>
+        <p>LOOP은 그 순환을 일상의 학습 루틴으로 심는 도구입니다. 우리는 답을 주는 AI가 아닌, <strong>당신의 사고를 비추는 거울</strong>을 만들고 싶습니다.</p>
+        <div class="sig">— LOOP 창업팀</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section>
+  <div class="container">
+    <div class="eyebrow">FAQ</div>
+    <h2>자주 묻는 질문</h2>
+    <p class="sub">더 궁금한 게 있다면 hello@loop.ai 로 보내주세요.</p>
+
+    <div class="faq-list">
+      <div class="faq"><div class="q">기존 AI 챗봇과 무엇이 다른가요?</div><div class="a">ChatGPT/Claude는 범용 어시스턴트입니다. LOOP는 학습 과정에 특화된 워크플로우(7단계 메소드, 학습 자산 라이브러리, 설명 검증 리포트)를 제공합니다. \"답을 받는 AI\"에서 \"사고를 외부화하는 AI\"로의 전환입니다.</div></div>
+      <div class="faq"><div class="q">언제 출시되나요?</div><div class="a">2026년 3분기 공개 베타. 사전 등록자에게 비공개 베타 초대권을 먼저 보내드립니다.</div></div>
+      <div class="faq"><div class="q">가격은 어떻게 되나요?</div><div class="a">Pro 플랜은 월 $12입니다. 사전 등록자 1,000명에게는 평생 50% 할인 ($6/월)을 제공합니다.</div></div>
+      <div class="faq"><div class="q">학원/기업용 라이선스가 있나요?</div><div class="a">네, 좌석당 월 $8의 Institution License를 운영합니다. SSO·SCIM·교사 대시보드·진척 리포트가 포함됩니다. partners@loop.ai 로 문의 주세요.</div></div>
+      <div class="faq"><div class="q">어떤 학습 분야에 적합한가요?</div><div class="a">개념 학습이 필요한 모든 분야 — IT/CS, 의학, 법학, 경제학, 인문학 등. 단순 암기보다 \"이해와 설명\"이 중요한 도메인일수록 효과가 큽니다.</div></div>
+      <div class="faq"><div class="q">한국어를 지원하나요?</div><div class="a">한국어를 1차 출시 언어로 정식 지원합니다. 영어·일본어는 2027년 1분기 추가 예정입니다.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <div class="container">
+    <h2>당신의 학습 루프를 닫을 시간.</h2>
+    <p>이해와 설명이 만나는 그 순간에, 같이 있고 싶습니다.</p>
+    <form id="final-form" onsubmit="return submitEarly(event,'bottom')">
+      <input type="email" placeholder="이메일을 입력하세요" required>
+      <button type="submit">사전 등록하기 →</button>
+    </form>
+    <div class="success" id="success-bottom" style="max-width:480px; margin:16px auto 0">🍀 등록되었습니다. 출시 소식을 가장 먼저 보내드릴게요.</div>
+    <p style="font-size:13px; margin-top:24px; color:rgba(255,255,255,0.5)">스팸 없음. 출시 알림과 큐레이션 학습 팁만 가끔 보내드립니다.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="brand-foot">LOOP</div>
+    <div>이해와 설명은 서로를 밀어 올리는 두 개의 날개입니다 🍀</div>
+    <div class="links">
+      <a href="#">About</a>
+      <a href="#">Blog</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Contact</a>
+    </div>
+    <div class="copy">© 2026 LOOP, Inc. · hello@loop.ai</div>
+  </div>
+</footer>
+
+<script>
+// FAQ accordion
+document.querySelectorAll('.faq').forEach(f => {
+  f.addEventListener('click', () => f.classList.toggle('open'));
+});
+
+// Form submission (demo — would POST to backend)
+function submitEarly(e, which) {
+  e.preventDefault();
+  const form = e.target;
+  const email = form.querySelector('input').value;
+  if (!email || !email.includes('@')) return false;
+  // demo: just show success
+  document.getElementById('success-' + which).classList.add('show');
+  form.querySelector('input').value = '';
+  // optional: bump counter
+  return false;
+}
+</script>
+</body>
+</html>

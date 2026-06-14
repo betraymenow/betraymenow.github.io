@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOOP — 이해와 설명의 순환 · 인터랙티브 인포그래픽</title>
+<style>
+  :root {
+    --ink: #2D1B4E;
+    --ink-2: #5B4A7A;
+    --coral: #F4845F;
+    --gold: #FFC971;
+    --sage: #84B59F;
+    --white: #FFFFFF;
+    --bg: #FAFAFA;
+    --text: #1A1A2E;
+    --muted: #6B6B7C;
+    --border: #ECECF0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: 'Inter', -apple-system, 'Pretendard', 'Apple SD Gothic Neo', sans-serif; color: var(--text); background: var(--bg); line-height: 1.55; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+  /* HERO */
+  .hero { background: var(--ink); color: var(--white); padding: 80px 0 100px; position: relative; overflow: hidden; }
+  .hero::before { content:""; position:absolute; top:-100px; right:-100px; width:400px; height:400px; border-radius:50%; border:3px solid var(--coral); opacity:0.4; }
+  .hero::after { content:""; position:absolute; top:50px; right:50px; width:400px; height:400px; border-radius:50%; border:3px solid var(--gold); opacity:0.3; }
+  .brand { font-family: Georgia, serif; font-weight: 900; font-size: 14px; letter-spacing: 8px; color: var(--gold); margin-bottom: 24px; }
+  .hero h1 { font-family: Georgia, serif; font-size: clamp(40px, 6vw, 72px); font-weight: 700; line-height: 1.1; max-width: 800px; margin-bottom: 24px; }
+  .hero h1 em { font-style: italic; color: var(--coral); }
+  .hero p { font-size: 18px; color: rgba(255,255,255,0.7); max-width: 600px; }
+
+  /* SECTION */
+  section { padding: 80px 0; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 6px; color: var(--coral); text-transform: uppercase; margin-bottom: 16px; }
+  h2 { font-family: Georgia, serif; font-size: clamp(28px, 4vw, 42px); margin-bottom: 16px; line-height: 1.2; }
+  .sub { color: var(--muted); font-size: 16px; margin-bottom: 48px; max-width: 700px; }
+
+  /* CYCLE DIAGRAM */
+  .cycle-wrap { position: relative; width: 100%; max-width: 720px; aspect-ratio: 1; margin: 0 auto; }
+  .cycle-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 200px; height: 200px; border-radius: 50%; background: var(--white); border: 2px dashed var(--ink-2); display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 24px; text-align: center; }
+  .cycle-center .label { font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: var(--ink); }
+  .cycle-center .desc { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .node { position: absolute; width: 130px; height: 130px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.25s ease, box-shadow 0.25s ease; padding: 8px; text-align: center; user-select: none; }
+  .node:hover, .node.active { transform: scale(1.08); box-shadow: 0 12px 30px rgba(45,27,78,0.3); z-index: 5; }
+  .node .num { font-family: Georgia, serif; font-size: 20px; font-weight: 700; opacity: 0.7; }
+  .node .title { font-family: Georgia, serif; font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .node .tag { font-size: 11px; opacity: 0.85; margin-top: 4px; }
+  .node-1 { top: 0%; left: 50%; transform: translateX(-50%); background: var(--coral); color: var(--white); }
+  .node-2 { top: 28%; right: 0%; background: var(--gold); color: var(--ink); }
+  .node-3 { bottom: 12%; right: 8%; background: var(--sage); color: var(--white); }
+  .node-4 { bottom: 12%; left: 8%; background: var(--coral); color: var(--white); }
+  .node-5 { top: 28%; left: 0%; background: var(--gold); color: var(--ink); }
+  .node-1:hover, .node-1.active { transform: translateX(-50%) scale(1.08); }
+  .arrows { position: absolute; inset: 0; pointer-events: none; }
+  .arrows svg { width: 100%; height: 100%; }
+
+  .detail-panel { margin-top: 40px; background: var(--white); border-radius: 16px; padding: 32px; border: 1px solid var(--border); min-height: 180px; transition: all 0.3s ease; }
+  .detail-panel .badge { display: inline-block; background: var(--ink); color: var(--white); padding: 4px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-bottom: 12px; }
+  .detail-panel h3 { font-family: Georgia, serif; font-size: 26px; margin-bottom: 12px; color: var(--ink); }
+  .detail-panel p { color: var(--text); font-size: 15px; margin-bottom: 12px; }
+  .detail-panel .quote { background: var(--bg); border-left: 4px solid var(--coral); padding: 14px 18px; font-style: italic; color: var(--muted); border-radius: 4px; margin-top: 16px; }
+
+  /* 7 STEPS LADDER */
+  .ladder-section { background: var(--white); }
+  .ladder { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  .step { background: var(--bg); border-left: 6px solid var(--border); border-radius: 8px; padding: 20px 24px; display: grid; grid-template-columns: 56px 1.4fr 2fr auto; gap: 20px; align-items: center; cursor: pointer; transition: all 0.25s ease; }
+  .step:hover { background: #F2EFFC; transform: translateX(4px); }
+  .step.lv2 { border-left-color: var(--sage); }
+  .step.lv3 { border-left-color: var(--sage); }
+  .step.lv4 { border-left-color: var(--coral); }
+  .step.lv5 { border-left-color: var(--coral); }
+  .step.lv6 { border-left-color: var(--gold); }
+  .step.lv7 { border-left-color: var(--gold); }
+  .step.lv8 { border-left-color: var(--ink); }
+  .step .num { font-family: Georgia, serif; font-size: 32px; font-weight: 700; color: var(--ink-2); }
+  .step .name { font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: var(--ink); }
+  .step .prompt { font-size: 14px; color: var(--muted); font-style: italic; }
+  .step .stars { font-size: 12px; color: var(--coral); letter-spacing: 2px; }
+  .step-detail { display: none; grid-column: 1 / -1; padding: 16px 0 0; border-top: 1px dashed var(--border); margin-top: 12px; color: var(--text); font-size: 14px; }
+  .step.open .step-detail { display: block; }
+  .step.open .name { color: var(--coral); }
+
+  /* MATURITY SLIDER */
+  .maturity-section { background: var(--ink); color: var(--white); }
+  .maturity-section h2, .maturity-section .eyebrow { color: var(--white); }
+  .maturity-section .eyebrow { color: var(--gold); }
+  .maturity-section .sub { color: rgba(255,255,255,0.65); }
+  .slider-wrap { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 32px; }
+  .slider-labels { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; color: rgba(255,255,255,0.55); font-weight: 700; letter-spacing: 2px; }
+  input[type=range] { width: 100%; -webkit-appearance: none; height: 6px; background: linear-gradient(to right, var(--ink-2), var(--coral), var(--gold)); border-radius: 999px; outline: none; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--white); border: 4px solid var(--coral); cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  input[type=range]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: var(--white); border: 4px solid var(--coral); cursor: pointer; }
+  .level-display { display: grid; grid-template-columns: 1fr 2fr; gap: 32px; margin-top: 32px; align-items: start; }
+  .level-display .level-num { font-family: Georgia, serif; font-size: 100px; font-weight: 700; color: var(--gold); line-height: 1; }
+  .level-display .level-title { font-family: Georgia, serif; font-size: 28px; margin-bottom: 12px; }
+  .level-display .level-desc { color: rgba(255,255,255,0.75); margin-bottom: 16px; }
+  .level-display .level-example { background: rgba(255,255,255,0.08); padding: 14px 18px; border-radius: 8px; font-size: 14px; font-style: italic; color: var(--gold); }
+
+  /* PROMPT SIMULATOR */
+  .sim-section { background: var(--white); }
+  .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media(max-width: 800px) { .sim-grid { grid-template-columns: 1fr; } }
+  .sim-card { background: var(--bg); border-radius: 16px; padding: 24px; border: 1px solid var(--border); }
+  .sim-card h4 { font-family: Georgia, serif; font-size: 20px; margin-bottom: 16px; color: var(--ink); }
+  .sim-pick { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .sim-pick button { background: var(--white); border: 1px solid var(--border); padding: 8px 14px; border-radius: 999px; font-size: 13px; cursor: pointer; transition: all 0.2s ease; font-family: inherit; color: var(--text); }
+  .sim-pick button:hover { border-color: var(--coral); color: var(--coral); }
+  .sim-pick button.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .sim-output { background: var(--ink); color: var(--white); border-radius: 12px; padding: 20px; font-size: 14px; font-family: 'Consolas', monospace; min-height: 200px; white-space: pre-wrap; line-height: 1.6; }
+  .sim-output .accent { color: var(--gold); }
+
+  /* FOOTER */
+  footer { background: var(--ink); color: rgba(255,255,255,0.5); padding: 40px 0; text-align: center; font-size: 13px; }
+  footer .brand-foot { font-family: Georgia, serif; color: var(--white); font-size: 20px; font-weight: 700; letter-spacing: 6px; margin-bottom: 12px; }
+
+  @media(max-width: 720px) {
+    .cycle-wrap { max-width: 380px; }
+    .node { width: 90px; height: 90px; padding: 4px; }
+    .node .num { font-size: 14px; }
+    .node .title { font-size: 13px; }
+    .node .tag { display: none; }
+    .cycle-center { width: 120px; height: 120px; padding: 12px; }
+    .cycle-center .label { font-size: 15px; }
+    .cycle-center .desc { font-size: 11px; }
+    .step { grid-template-columns: 40px 1fr; gap: 12px; }
+    .step .prompt, .step .stars { grid-column: 1 / -1; }
+    .level-display { grid-template-columns: 1fr; }
+    .level-display .level-num { font-size: 64px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="brand">LOOP · INTERACTIVE</div>
+    <h1>이해와 <em>설명</em>이 만나는<br>순간을 시각화하다</h1>
+    <p>아래 다이어그램을 클릭하면 단계의 의미가 펼쳐집니다. 슬라이더를 움직이면 학습자의 AI 활용 성숙도가 어떻게 진화하는지 보입니다.</p>
+  </div>
+</section>
+
+<!-- CYCLE -->
+<section>
+  <div class="container">
+    <div class="eyebrow">The Loop</div>
+    <h2>이해 ↔ 설명의 5단계 순환</h2>
+    <p class="sub">배우는 것과 가르치는 것은 분리된 활동이 아닙니다. 서로를 깊게 만드는 하나의 순환입니다. 노드를 클릭해 보세요.</p>
+
+    <div class="cycle-wrap">
+      <svg class="arrows" viewBox="0 0 500 500" preserveAspectRatio="none">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#5B4A7A"/>
+          </marker>
+        </defs>
+        <circle cx="250" cy="250" r="180" fill="none" stroke="#ECECF0" stroke-width="2" stroke-dasharray="4 6"/>
+      </svg>
+      <div class="node node-1 active" data-step="1">
+        <div class="num">01</div><div class="title">학습</div><div class="tag">개념을 접한다</div>
+      </div>
+      <div class="node node-2" data-step="2">
+        <div class="num">02</div><div class="title">이해</div><div class="tag">의미를 파악</div>
+      </div>
+      <div class="node node-3" data-step="3">
+        <div class="num">03</div><div class="title">구조화</div><div class="tag">정리한다</div>
+      </div>
+      <div class="node node-4" data-step="4">
+        <div class="num">04</div><div class="title">설명</div><div class="tag">표현한다</div>
+      </div>
+      <div class="node node-5" data-step="5">
+        <div class="num">05</div><div class="title">재이해</div><div class="tag">빈틈을 본다</div>
+      </div>
+      <div class="cycle-center">
+        <div class="label">이해 ↔ 설명</div>
+        <div class="desc">순환할수록<br>깊어진다</div>
+      </div>
+    </div>
+
+    <div class="detail-panel" id="cycle-detail">
+      <span class="badge" id="cd-badge">STEP 01</span>
+      <h3 id="cd-title">학습 · 개념을 접한다</h3>
+      <p id="cd-desc">새로운 개념을 처음 만나는 단계. 책, 강의, 검색, 대화 — 어떤 채널로도 시작될 수 있습니다.</p>
+      <div class="quote" id="cd-quote">"AI에게 가장 먼저 던지는 질문: 이것의 정의가 뭐야?"</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 STEPS -->
+<section class="ladder-section">
+  <div class="container">
+    <div class="eyebrow">7-Step Method</div>
+    <h2>난이도에 따라 사고가 깊어진다</h2>
+    <p class="sub">각 단계를 클릭하면 어떻게 작동하는지, 그리고 학습 효과가 어떻게 달라지는지 펼쳐집니다.</p>
+
+    <div class="ladder">
+      <div class="step lv2" data-id="s1">
+        <div class="num">①</div>
+        <div class="name">구조화</div>
+        <div class="prompt">"이 내용을 표로 정리해줘"</div>
+        <div class="stars">⭐⭐</div>
+        <div class="step-detail">정보를 카테고리로 분류하면서 처음으로 "내가 무엇을 모르는지" 가시화됩니다. AI는 빈 칸을 만들어주고, 학습자는 그 빈 칸을 보면서 사고합니다.</div>
+      </div>
+      <div class="step lv3" data-id="s2">
+        <div class="num">②</div>
+        <div class="name">시각화</div>
+        <div class="prompt">"플로우차트로 그려줘 / 인포그래픽으로 표현해줘"</div>
+        <div class="stars">⭐⭐⭐</div>
+        <div class="step-detail">텍스트 → 구조 → 이미지. 인간의 뇌는 시각 정보에 강하기 때문에 이해와 기억이 훨씬 쉬워집니다. "한 장으로 표현하기"는 가장 강력한 압축 훈련입니다.</div>
+      </div>
+      <div class="step lv4" data-id="s3">
+        <div class="num">③</div>
+        <div class="name">비유화</div>
+        <div class="prompt">"중학생도 이해할 수 있게 / 축구로 비유해줘"</div>
+        <div class="stars">⭐⭐⭐⭐</div>
+        <div class="step-detail">"안다는 착각"이 무너지는 지점입니다. 비유를 만들 수 없다는 건 사실 이해하지 못한 것입니다. AI는 후보 비유를 5개씩 만들어주고, 그중 가장 잘 맞는 것을 학습자가 고릅니다.</div>
+      </div>
+      <div class="step lv5" data-id="s4">
+        <div class="num">④</div>
+        <div class="name">관점화</div>
+        <div class="prompt">"환원주의 관점에서 / 경제학 관점에서 설명해줘"</div>
+        <div class="stars">⭐⭐⭐⭐⭐</div>
+        <div class="step-detail">동일 개념에 새로운 해석 프레임을 씌웁니다. SQL이 단순히 "데이터베이스 언어"에서 "정보를 질의하는 사고방식"으로 보이기 시작합니다. 사고가 입체화됩니다.</div>
+      </div>
+      <div class="step lv6" data-id="s5">
+        <div class="num">⑤</div>
+        <div class="name">연결화</div>
+        <div class="prompt">"이 개념이 저 개념과 어떤 관계가 있어?"</div>
+        <div class="stars">⭐⭐⭐⭐⭐⭐</div>
+        <div class="step-detail">학습이 "암기 → 이해"가 아니라 "이해 → 통합"으로 넘어가는 분기점. 창발성과 AI, 환원주의와 코딩, 공부와 시스템 설계 — 별개로 보이던 개념들이 하나의 그물망이 됩니다.</div>
+      </div>
+      <div class="step lv7" data-id="s6">
+        <div class="num">⑥</div>
+        <div class="name">창조화</div>
+        <div class="prompt">"이 개념을 활용한 새로운 아이디어를 만들어줘"</div>
+        <div class="stars">⭐⭐⭐⭐⭐⭐⭐</div>
+        <div class="step-detail">소비자에서 생산자로의 전환점. 학습한 개념을 재료 삼아 새로운 모델을 설계합니다. 이 단계부터 "AI 활용 학습"은 "AI 활용 창작"과 구분되지 않습니다.</div>
+      </div>
+      <div class="step lv8" data-id="s7">
+        <div class="num">⑦</div>
+        <div class="name">검증화</div>
+        <div class="prompt">"내가 설명한 내용의 빈틈을 찾아줘"</div>
+        <div class="stars">⭐⭐⭐⭐⭐⭐⭐</div>
+        <div class="step-detail">학습자가 설명하고 AI가 평가하는 역할 반전. 가장 큰 학습은 여기서 일어납니다. "내가 못 본 사각지대"를 AI가 비춰주는 순간, 지식은 정보가 아니라 자기 언어가 됩니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MATURITY SLIDER -->
+<section class="maturity-section">
+  <div class="container">
+    <div class="eyebrow">Maturity Slider</div>
+    <h2>당신은 AI를 어떻게 쓰고 있나요?</h2>
+    <p class="sub">슬라이더를 움직여 자신의 활용 단계를 확인하세요. 대부분은 Lv.1~2에 머뭅니다.</p>
+
+    <div class="slider-wrap">
+      <div class="slider-labels">
+        <span>Lv.1</span><span>Lv.2</span><span>Lv.3</span><span>Lv.4</span><span>Lv.5</span>
+      </div>
+      <input type="range" min="1" max="5" value="1" id="mat-slider">
+      <div class="level-display">
+        <div class="level-num" id="mat-num">01</div>
+        <div>
+          <div class="level-title" id="mat-title">답안 생성기</div>
+          <div class="level-desc" id="mat-desc">AI에게 단답형 질문을 던지고 답을 받아 끝냅니다. 정보는 얻지만 학습 효과는 거의 없습니다.</div>
+          <div class="level-example" id="mat-ex">"SQL이 뭐야?" → 정의 한 줄 → 끝</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROMPT SIMULATOR -->
+<section class="sim-section">
+  <div class="container">
+    <div class="eyebrow">Prompt Simulator</div>
+    <h2>같은 개념, 7가지 프롬프트</h2>
+    <p class="sub">동일한 주제에 7단계 메소드를 적용했을 때 AI가 어떻게 답하는지 미리 봅니다.</p>
+
+    <div class="sim-grid">
+      <div class="sim-card">
+        <h4>① 주제를 고르세요</h4>
+        <div class="sim-pick" id="topic-pick">
+          <button data-topic="sql" class="active">SQL vs Python</button>
+          <button data-topic="git">Git Fetch vs Pull</button>
+          <button data-topic="emerge">창발성</button>
+        </div>
+        <h4 style="margin-top:24px">② 활용법을 고르세요</h4>
+        <div class="sim-pick" id="method-pick">
+          <button data-method="0" class="active">구조화</button>
+          <button data-method="1">시각화</button>
+          <button data-method="2">비유화</button>
+          <button data-method="3">관점화</button>
+          <button data-method="4">연결화</button>
+          <button data-method="5">창조화</button>
+          <button data-method="6">검증화</button>
+        </div>
+      </div>
+      <div class="sim-card">
+        <h4>AI 응답 미리보기</h4>
+        <div class="sim-output" id="sim-output">선택을 기다리는 중…</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="brand-foot">LOOP</div>
+    <div>이해와 설명은 서로를 밀어 올리는 두 개의 날개입니다 🍀</div>
+    <div style="margin-top:8px; font-size:11px; opacity:0.4">© 2026 LOOP · Interactive Infographic</div>
+  </div>
+</footer>
+
+<script>
+// ========== Cycle interaction ==========
+const cycleData = {
+  1: { title: "학습 · 개념을 접한다", desc: "새로운 개념을 처음 만나는 단계. 책, 강의, 검색, 대화 — 어떤 채널로도 시작됩니다. 이 시점의 이해는 아직 흐릿하고 임시적입니다.", quote: '"AI에게 가장 먼저 던지는 질문: 이것의 정의가 뭐야?"' },
+  2: { title: "이해 · 의미를 파악한다", desc: "정보가 머릿속에서 의미로 변환되는 단계. 그러나 \"안다고 생각하지만\" 실제로는 모르는 경우가 많습니다.", quote: '"많은 학습자는 여기서 멈춥니다. \'아, 알겠어\' 하고 다음으로 넘어가죠."' },
+  3: { title: "구조화 · 머릿속을 정리한다", desc: "표, 분류, 위계로 정보를 조직하는 단계. AI가 빈 칸을 만들어주면 학습자는 처음으로 \"내가 무엇을 모르는지\" 보게 됩니다.", quote: '"이 단계부터 정보가 지식으로 변환되기 시작합니다."' },
+  4: { title: "설명 · 다른 사람이 이해할 수 있게", desc: "타인에게 전달 가능한 형태로 압축·번역하는 단계. 설명할 수 없다면 사실은 이해하지 못한 것입니다.", quote: '"미래의 강사가 되어보기. 학습 중 \'이걸 어떻게 설명할까?\'를 묻습니다."' },
+  5: { title: "재이해 · 빈틈을 발견한다", desc: "설명하는 과정에서 \"안다는 착각\"이 무너지고 진짜 빈틈이 드러나는 단계. 이 빈틈이 다시 ①학습으로 돌아가게 합니다.", quote: '"가장 깊은 학습은 가르치려 할 때 일어납니다."' }
+};
+document.querySelectorAll('.node').forEach(n => {
+  n.addEventListener('click', () => {
+    document.querySelectorAll('.node').forEach(x => x.classList.remove('active'));
+    n.classList.add('active');
+    const step = n.dataset.step;
+    const d = cycleData[step];
+    document.getElementById('cd-badge').textContent = 'STEP 0' + step;
+    document.getElementById('cd-title').textContent = d.title;
+    document.getElementById('cd-desc').textContent = d.desc;
+    document.getElementById('cd-quote').textContent = d.quote;
+  });
+});
+
+// ========== 7-step accordion ==========
+document.querySelectorAll('.step').forEach(s => {
+  s.addEventListener('click', () => {
+    const wasOpen = s.classList.contains('open');
+    document.querySelectorAll('.step').forEach(x => x.classList.remove('open'));
+    if (!wasOpen) s.classList.add('open');
+  });
+});
+
+// ========== Maturity slider ==========
+const matData = {
+  1: { num: '01', title: '답안 생성기', desc: 'AI에게 단답형 질문을 던지고 답을 받아 끝냅니다. 정보는 얻지만 학습 효과는 거의 없습니다.', ex: '"SQL이 뭐야?" → 정의 한 줄 → 끝' },
+  2: { num: '02', title: '설명 변환기', desc: '비교표, 분류, 정리를 요청합니다. 정보를 구조화해서 이해하기 시작합니다.', ex: '"SQL과 Python 차이를 표로 정리해줘"' },
+  3: { num: '03', title: '시각화 도구', desc: '텍스트를 그림·플로우차트·인포그래픽으로 변환합니다. 시각 정보 기반 기억이 강화됩니다.', ex: '"SQL과 Python 차이를 플로우차트로 보여줘"' },
+  4: { num: '04', title: '관점 생성기', desc: '기존 지식 위에 새로운 해석 프레임을 씌웁니다. 사고가 다관점적으로 입체화됩니다.', ex: '"수동코딩과 바이브코딩을 환원주의/전일주의 관점에서 비교해줘"' },
+  5: { num: '05', title: '자기 모델 구축', desc: '여러 개념을 연결해 자기만의 사고 모델을 만듭니다. 학습은 \"이해 → 통합\" 단계로 넘어갑니다.', ex: '"창발성·AI·공부를 하나의 메타 모델로 묶어줘"' }
+};
+const slider = document.getElementById('mat-slider');
+slider.addEventListener('input', () => {
+  const d = matData[slider.value];
+  document.getElementById('mat-num').textContent = d.num;
+  document.getElementById('mat-title').textContent = d.title;
+  document.getElementById('mat-desc').textContent = d.desc;
+  document.getElementById('mat-ex').textContent = d.ex;
+});
+
+// ========== Prompt simulator ==========
+const simResponses = {
+  sql: [
+    `| 항목 | SQL | Python |\n| --- | --- | --- |\n| 목적 | 데이터 질의 | 범용 프로그래밍 |\n| 패러다임 | 선언형 | 명령형 |\n| 실행 환경 | DB 엔진 | 인터프리터 |`,
+    `[데이터 저장]\n     ↓\n  [SQL: 질의]──→ 빠른 추출\n     ↓\n  [Python: 가공·시각화]`,
+    `SQL은 '도서관 사서'에게 책을 찾아달라고 부탁하는 것,\nPython은 그 책을 가져와 직접 읽고 분해·재조립하는 것.`,
+    `(경제학 관점) SQL = 거래소, Python = 가공 공장.\nSQL은 데이터를 '거래'하고 Python은 '제조'한다.`,
+    `SQL ↔ Python ↔ Pandas ↔ 머신러닝.\n네 개는 \"데이터를 다루는 추상화 사다리\" 의 연속선이다.`,
+    `아이디어: 자연어 → SQL → Python → 시각화를\n하나의 파이프라인 에이전트로 묶으면 누구나 분석가가 된다.`,
+    `당신의 설명에서 빠진 것:\n① 트랜잭션·동시성 개념\n② Python의 GIL과 병렬성\n③ SQL이 \"집합 연산\" 기반이라는 점`
+  ],
+  git: [
+    `| 항목 | git fetch | git pull |\n| --- | --- | --- |\n| 동작 | 원격 상태만 가져옴 | fetch + merge |\n| 안전성 | 변경 없음 | 자동 병합 |\n| 사용 시점 | 검토 전 | 즉시 반영 |`,
+    `[원격 저장소]──fetch──→[로컬 추적]──merge──→[작업 브랜치]\n         └────────── pull ──────────┘`,
+    `fetch = 우편함을 열어보는 것 (편지만 확인),\npull = 편지를 곧바로 책상 위에 펼치는 것.`,
+    `(보안 관점) fetch는 \"감사 후 반영\",\npull은 \"신뢰 기반 자동 적용\". 정책에 따라 다르다.`,
+    `fetch ↔ 코드 리뷰 ↔ CI/CD.\n셋 모두 \"받기 전 검증\" 이라는 같은 원리를 공유한다.`,
+    `아이디어: PR마다 fetch 단계에서 LLM이\n변경 영향도를 자동 요약하는 git-aware 봇.`,
+    `당신의 설명에서 빠진 것:\n① fast-forward vs three-way merge\n② rebase와의 관계\n③ tracking branch의 의미`
+  ],
+  emerge: [
+    `| 차원 | 환원주의 | 창발주의 |\n| --- | --- | --- |\n| 설명 단위 | 부분 | 전체 |\n| 예측 | 가능 | 부분적 |\n| 사례 | 분자 | 의식 |`,
+    `[개별 요소]──상호작용──→[패턴]──증폭──→[새로운 속성]\n                        ↑ 환원만으로 설명 불가`,
+    `창발성은 \"새 떼\"와 같다.\n새 한 마리는 단순하지만, 1000마리가 모이면\n누구도 명령하지 않은 군무가 나타난다.`,
+    `(과학 관점) 비선형 동역학,\n(철학 관점) 존재의 위계,\n(예술 관점) 즉흥성 — 같은 현상을 다르게 부른다.`,
+    `창발성 ↔ AI ↔ 학습 ↔ 도시 ↔ 시장.\n다섯 모두 \"부분의 합 이상\" 이라는 구조를 공유한다.`,
+    `아이디어: 학습 콘텐츠를 \"창발 시뮬레이터\"로 만들기.\n작은 규칙 몇 개로 큰 현상이 만들어지는 걸 학습자가 체험.`,
+    `당신의 설명에서 빠진 것:\n① 약한 창발 vs 강한 창발\n② 환원 불가능성의 정의\n③ 컴퓨터 시뮬레이션과의 관계`
+  ]
+};
+let curTopic = 'sql', curMethod = 0;
+const methodLabels = ['구조화','시각화','비유화','관점화','연결화','창조화','검증화'];
+function renderSim() {
+  const r = simResponses[curTopic][curMethod];
+  const out = document.getElementById('sim-output');
+  out.innerHTML = `<span class="accent">[${methodLabels[curMethod]}]</span>\n\n${r}`;
+}
+document.querySelectorAll('#topic-pick button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#topic-pick button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    curTopic = b.dataset.topic;
+    renderSim();
+  });
+});
+document.querySelectorAll('#method-pick button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#method-pick button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    curMethod = parseInt(b.dataset.method);
+    renderSim();
+  });
+});
+renderSim();
+</script>
+</body>
+</html>

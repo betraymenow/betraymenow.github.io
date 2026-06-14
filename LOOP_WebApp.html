@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LOOP — 학습 변환기</title>
+<meta name="description" content="블로그 글, 논문, 책 발췌문을 7단계로 가공해 진짜 내 것으로 만드는 학습 변환기.">
+<style>
+  :root {
+    --ink: #2D1B4E;
+    --ink-2: #5B4A7A;
+    --coral: #F4845F;
+    --gold: #FFC971;
+    --sage: #84B59F;
+    --white: #FFFFFF;
+    --bg: #FAFAFA;
+    --text: #1A1A2E;
+    --muted: #6B6B7C;
+    --border: #ECECF0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: -apple-system, 'Pretendard', 'Apple SD Gothic Neo', 'Inter', sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.55; min-height: 100vh;
+  }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  input, textarea, select { font-family: inherit; outline: none; color: inherit; }
+
+  /* === APP === */
+  header.app-header {
+    border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(12px); background: rgba(255,255,255,0.92);
+  }
+  .header-inner {
+    max-width: 1600px; margin: 0 auto; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  }
+  .header-brand { font-family: Georgia, serif; font-weight: 900; font-size: 20px; letter-spacing: 6px; color: var(--ink); }
+  .header-brand span { color: var(--coral); font-weight: 700; font-size: 12px; letter-spacing: 3px; margin-left: 12px; }
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .header-mode {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px; padding: 4px 10px;
+    border-radius: 999px; background: var(--bg); color: var(--muted);
+  }
+  .header-mode.api { background: rgba(132,181,159,0.15); color: var(--sage); }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--bg);
+    border: 1px solid var(--border); display: flex; align-items: center; justify-content: center;
+    font-size: 16px; transition: all 0.2s ease; color: var(--ink);
+  }
+  .icon-btn:hover { background: var(--ink); color: var(--white); }
+
+  main { max-width: 1600px; margin: 0 auto; padding: 32px 24px 80px; }
+
+  /* === INPUT PHASE === */
+  .panel {
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 20px; padding: 32px;
+  }
+  .panel-header { margin-bottom: 20px; }
+  .panel-eyebrow {
+    font-size: 11px; font-weight: 800; letter-spacing: 4px;
+    color: var(--coral); text-transform: uppercase; margin-bottom: 8px;
+  }
+  .panel-title { font-family: Georgia, serif; font-size: 22px; color: var(--ink); }
+
+  textarea.input-text {
+    width: 100%; min-height: 220px; padding: 18px; border: 1px solid var(--border);
+    border-radius: 14px; font-size: 15px; line-height: 1.6; resize: vertical;
+    background: var(--bg); transition: border 0.2s ease;
+  }
+  textarea.input-text:focus { border-color: var(--coral); background: var(--white); }
+
+  .stage-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px; margin-top: 16px;
+  }
+  .stage-chip {
+    border: 1.5px solid var(--border); background: var(--white); border-radius: 14px;
+    padding: 16px; cursor: pointer; transition: all 0.2s ease; text-align: left; position: relative;
+  }
+  .stage-chip:hover { border-color: var(--ink-2); transform: translateY(-2px); }
+  .stage-chip.selected {
+    border-color: var(--coral);
+    background: linear-gradient(135deg, rgba(244,132,95,0.08) 0%, rgba(255,201,113,0.08) 100%);
+  }
+  .stage-chip.selected::after {
+    content: "✓"; position: absolute; top: 12px; right: 14px;
+    width: 22px; height: 22px; background: var(--coral); color: var(--white);
+    border-radius: 50%; font-size: 12px; display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+  }
+  .stage-chip .stage-icon {
+    font-family: Georgia, serif; font-size: 22px; color: var(--coral); margin-bottom: 8px; display: block;
+  }
+  .stage-chip .stage-name {
+    font-family: Georgia, serif; font-size: 17px; font-weight: 700; color: var(--ink); margin-bottom: 4px;
+  }
+  .stage-chip .stage-desc { font-size: 12px; color: var(--muted); }
+
+  .stage-toolbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 16px; flex-wrap: wrap; gap: 12px;
+  }
+  .toolbar-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+  .text-btn {
+    background: transparent; color: var(--ink); font-size: 13px;
+    padding: 6px 12px; border-radius: 8px; transition: background 0.2s ease; font-weight: 600;
+  }
+  .text-btn:hover { background: var(--bg); }
+
+  .convert-row { display: flex; justify-content: center; margin-top: 24px; }
+  button.convert-btn {
+    background: var(--ink); color: var(--white); padding: 18px 48px;
+    border-radius: 999px; font-size: 16px; font-weight: 700; letter-spacing: 1px;
+    transition: all 0.25s ease; box-shadow: 0 12px 30px rgba(45,27,78,0.2);
+  }
+  button.convert-btn:hover:not(:disabled) {
+    background: var(--coral); transform: translateY(-3px); box-shadow: 0 16px 40px rgba(244,132,95,0.3);
+  }
+  button.convert-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* === RESULTS === */
+  .results-bar {
+    background: var(--ink); color: var(--white); border-radius: 16px;
+    padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .results-bar .source-preview { flex: 1; min-width: 0; font-size: 13px; color: rgba(255,255,255,0.7); overflow: hidden; }
+  .results-bar .source-preview strong {
+    color: var(--gold); font-weight: 700; margin-right: 12px;
+    letter-spacing: 2px; font-size: 11px;
+  }
+  .results-bar .source-preview span {
+    display: inline-block; max-width: 100%; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom;
+  }
+  .reset-btn {
+    background: var(--coral); color: var(--white); padding: 10px 20px;
+    border-radius: 999px; font-size: 13px; font-weight: 700; transition: all 0.2s ease;
+  }
+  .reset-btn:hover { background: var(--white); color: var(--ink); }
+
+  .results-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 24px;
+  }
+
+  .result-card {
+    background: var(--white); border: 1px solid var(--border); border-radius: 20px;
+    padding: 28px; min-height: 200px; display: flex; flex-direction: column;
+  }
+  .result-card.full-width { grid-column: 1 / -1; }
+
+  .result-card-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .result-card-icon {
+    width: 44px; height: 44px; border-radius: 12px; background: var(--ink); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-family: Georgia, serif; font-size: 22px; font-weight: 700; flex-shrink: 0;
+  }
+  .result-card-title { font-family: Georgia, serif; font-size: 20px; color: var(--ink); font-weight: 700; }
+  .result-card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .result-content { flex: 1; font-size: 15px; line-height: 1.7; color: var(--text); overflow-wrap: break-word; }
+  .result-content h1, .result-content h2, .result-content h3, .result-content h4 {
+    font-family: Georgia, serif; color: var(--ink); margin: 20px 0 10px; line-height: 1.3;
+  }
+  .result-content h1 { font-size: 22px; }
+  .result-content h2 { font-size: 19px; }
+  .result-content h3 { font-size: 17px; }
+  .result-content h4 { font-size: 15px; }
+  .result-content p { margin-bottom: 12px; }
+  .result-content strong { color: var(--ink); font-weight: 700; }
+  .result-content em { color: var(--coral); font-style: italic; }
+  .result-content ul, .result-content ol { margin: 12px 0 12px 24px; }
+  .result-content li { margin-bottom: 8px; }
+  .result-content code {
+    background: var(--bg); padding: 2px 8px; border-radius: 6px;
+    font-family: 'Menlo', 'Monaco', 'Consolas', monospace; font-size: 13px; color: var(--ink);
+  }
+  .result-content pre {
+    background: var(--bg); padding: 14px; border-radius: 10px; margin: 12px 0;
+    overflow-x: auto; font-family: 'Menlo', 'Monaco', 'Consolas', monospace; font-size: 13px;
+  }
+  .result-content blockquote {
+    border-left: 3px solid var(--coral); padding-left: 16px; margin: 16px 0;
+    color: var(--muted); font-style: italic;
+  }
+  .result-content table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  .result-content th, .result-content td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .result-content th {
+    background: var(--ink); color: var(--white); font-weight: 700;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .result-content tr:hover { background: var(--bg); }
+  .result-content svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+  .result-content a { color: var(--coral); text-decoration: underline; }
+
+  .result-loading {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    flex: 1; color: var(--muted); font-size: 13px; gap: 16px; padding: 32px;
+  }
+  .spinner {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--coral);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-error {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--coral); font-size: 13px; text-align: center; padding: 24px;
+  }
+
+  .verify-list { list-style: none; margin: 0; padding: 0; counter-reset: verify; }
+  .verify-list li {
+    padding: 16px 16px 16px 56px; background: var(--bg); border-radius: 12px;
+    margin-bottom: 10px; border-left: 3px solid var(--coral); font-size: 15px;
+    line-height: 1.6; counter-increment: verify; position: relative;
+  }
+  .verify-list li::before {
+    content: "Q" counter(verify); position: absolute; left: 16px; top: 16px;
+    font-family: Georgia, serif; font-weight: 700; color: var(--coral); font-size: 14px;
+  }
+
+  /* === MODAL === */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(45,27,78,0.5);
+    backdrop-filter: blur(8px); z-index: 200;
+    display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--white); border-radius: 20px; padding: 36px;
+    max-width: 480px; width: 100%; box-shadow: 0 30px 80px rgba(45,27,78,0.2);
+  }
+  .modal h2 { font-family: Georgia, serif; font-size: 22px; color: var(--ink); margin-bottom: 8px; }
+  .modal .lead { color: var(--muted); font-size: 14px; margin-bottom: 24px; line-height: 1.5; }
+  .modal label {
+    display: block; font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: var(--ink); margin-bottom: 8px; text-transform: uppercase; margin-top: 16px;
+  }
+  .modal input, .modal select {
+    width: 100%; padding: 12px 16px; border: 1px solid var(--border);
+    border-radius: 10px; font-size: 14px; background: var(--bg);
+  }
+  .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+  .modal button.primary {
+    flex: 1; background: var(--ink); color: var(--white); padding: 12px;
+    border-radius: 10px; font-weight: 700; transition: all 0.2s ease;
+  }
+  .modal button.primary:hover { background: var(--coral); }
+  .modal button.secondary {
+    background: var(--bg); color: var(--ink); padding: 12px 20px;
+    border-radius: 10px; font-weight: 700;
+  }
+  .modal-hint { font-size: 11px; color: var(--muted); line-height: 1.6; margin-top: 16px; }
+  .modal-hint a { color: var(--coral); text-decoration: underline; }
+
+  .toast {
+    position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--ink); color: var(--white); padding: 14px 24px; border-radius: 999px;
+    font-size: 13px; font-weight: 600; box-shadow: 0 12px 30px rgba(45,27,78,0.3);
+    transition: transform 0.3s ease; z-index: 300;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 720px) {
+    .panel { padding: 20px; }
+    .result-card { padding: 20px; }
+    main { padding: 20px 16px 60px; }
+    .login-card { padding: 32px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- APP -->
+<div class="app" id="app">
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-brand">LOOP <span>학습 변환기</span></div>
+      <div class="header-actions">
+        <div class="header-mode" id="headerMode">데모 모드</div>
+        <button class="icon-btn" id="settingsBtn" title="설정">⚙</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- INPUT PHASE -->
+    <div id="inputPhase">
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-eyebrow">STEP 01 · INPUT</div>
+          <div class="panel-title">학습할 텍스트를 붙여넣으세요</div>
+        </div>
+
+        <textarea class="input-text" id="inputText" placeholder="블로그 글, 논문 초록, 책 발췌문… 무엇이든 붙여넣으세요. (Ctrl+V)"></textarea>
+
+        <div class="stage-toolbar">
+          <div style="font-size: 13px; color: var(--muted);">
+            <span id="charCount">0</span>자
+          </div>
+          <div class="toolbar-actions">
+            <button class="text-btn" id="pasteBtn">📋 클립보드에서 붙여넣기</button>
+            <button class="text-btn" id="sampleBtn">샘플 불러오기</button>
+            <button class="text-btn" id="clearBtn">지우기</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top: 24px;">
+        <div class="panel-header">
+          <div class="panel-eyebrow">STEP 02 · TRANSFORM</div>
+          <div class="panel-title">원하는 단계를 선택하세요</div>
+        </div>
+
+        <div class="stage-grid" id="stageGrid"></div>
+
+        <div class="stage-toolbar">
+          <div style="font-size: 13px; color: var(--muted);">
+            <span id="selectedCount">7</span>개 선택됨
+          </div>
+          <div class="toolbar-actions">
+            <button class="text-btn" id="selectAll">전체 선택</button>
+            <button class="text-btn" id="selectNone">해제</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="convert-row">
+        <button class="convert-btn" id="convertBtn">변환하기 →</button>
+      </div>
+    </div>
+
+    <!-- RESULTS PHASE -->
+    <div id="resultsPhase" style="display: none;">
+      <div class="results-bar">
+        <div class="source-preview">
+          <strong>원본</strong><span id="sourcePreview"></span>
+        </div>
+        <button class="reset-btn" id="resetBtn">← 새로 변환</button>
+      </div>
+
+      <div class="results-grid" id="resultsGrid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>설정</h2>
+    <p class="lead">실제 AI 변환을 사용하려면 Anthropic API 키를 입력하세요. 키는 이 브라우저에만 저장됩니다.</p>
+
+    <label>Anthropic API Key</label>
+    <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+
+    <label>모델</label>
+    <select id="modelSelect">
+      <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (균형 · 권장)</option>
+      <option value="claude-haiku-4-5">Claude Haiku 4.5 (빠름)</option>
+      <option value="claude-opus-4-8">Claude Opus 4.8 (고품질)</option>
+    </select>
+
+    <div class="modal-actions">
+      <button class="secondary" id="modalClose">취소</button>
+      <button class="primary" id="modalSave">저장</button>
+    </div>
+
+    <p class="modal-hint">
+      API 키 없이는 <strong>데모 모드</strong>로 동작합니다 — 미리 준비된 예시 결과가 표시됩니다.<br>
+      키는 <a href="https://console.anthropic.com/" target="_blank" rel="noopener">console.anthropic.com</a>에서 발급받을 수 있습니다.
+    </p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ STAGES ============
+const STAGES = [
+  { id: 'structure',     num: '⊞', name: '구조화',  desc: '비교/대조 표로 정리',     mode: 'markdown',  fullWidth: false },
+  { id: 'visualization', num: '◇', name: '시각화',  desc: '다이어그램으로 표현',     mode: 'svg',       fullWidth: true  },
+  { id: 'analogy',       num: '◐', name: '비유화',  desc: '쉬운 비유로 설명',        mode: 'markdown',  fullWidth: false },
+  { id: 'perspective',   num: '◬', name: '관점화',  desc: '다관점적 해석',          mode: 'markdown',  fullWidth: false },
+  { id: 'connection',    num: '∞', name: '연결화',  desc: '다른 개념과의 연결',     mode: 'markdown',  fullWidth: false },
+  { id: 'creation',      num: '✦', name: '창조화',  desc: '새로운 응용 아이디어',   mode: 'markdown',  fullWidth: false },
+  { id: 'verification',  num: '✓', name: '검증화',  desc: '이해 점검 질문',         mode: 'questions', fullWidth: true  },
+];
+
+const PROMPTS = {
+  structure: `다음 텍스트의 핵심 개념을 비교/대조하는 표로 정리해주세요. 가로 비교가 가능한 항목들을 추출해서 Markdown 표 형식으로 응답하세요. 표만 출력하고 다른 설명은 추가하지 마세요. 최소 3개 열, 4행 이상.\n\n---\n\n{INPUT}`,
+  visualization: `다음 텍스트의 구조나 흐름을 인라인 SVG 다이어그램으로 그려주세요.
+요구사항:
+- viewBox="0 0 800 500"
+- 다음 색만 사용: #2D1B4E(딥퍼플 메인), #F4845F(코랄 강조), #FFC971(골드 보조), #84B59F(세이지), #ECECF0(보더)
+- 박스, 화살표, 원, 텍스트를 활용해 개념 간 관계나 프로세스를 명확히 표현
+- 텍스트는 한국어, font-family는 sans-serif, 가독성 있게
+- 깔끔하고 인포그래픽 스타일
+- SVG 태그만 출력하세요. 설명이나 마크다운 코드블록 없이.
+
+---\n\n{INPUT}`,
+  analogy: `다음 텍스트의 핵심 개념을, 중학생도 이해할 수 있는 일상적이고 구체적인 비유로 설명해주세요.
+- 비유 1-2개를 깊이 있게 풀어내세요
+- 비유의 어떤 부분이 원개념의 어떤 부분과 대응되는지 명시
+- Markdown 형식 (### 헤더, **굵게**, - 리스트 활용)
+
+---\n\n{INPUT}`,
+  perspective: `다음 텍스트의 내용을 서로 다른 3가지 관점에서 해석해주세요.
+관점은 텍스트 내용에 맞게 선택하세요 (예: 환원주의/전일주의/실용주의, 또는 경제학/사회학/심리학, 또는 단기/장기/메타).
+- 각 관점이 같은 내용을 어떻게 다르게 보는지 대비
+- Markdown 형식 (### 관점명, 본문)
+
+---\n\n{INPUT}`,
+  connection: `다음 텍스트의 핵심 개념이 다른 분야나 개념과 어떻게 연결되는지 보여주세요.
+- 3-5개의 의미 있는 연결점
+- 각 연결마다: 어떤 개념과 / 어떻게 연결되는지 / 왜 흥미로운지
+- Markdown 형식 (### 헤더 + 본문)
+
+---\n\n{INPUT}`,
+  creation: `다음 텍스트의 개념을 활용한 새로운 아이디어, 응용, 또는 사고 실험 3가지를 제안해주세요.
+- 각각 구체적이고 실행 가능한 수준
+- 짧고 임팩트 있게
+- Markdown 형식 (### 아이디어 제목 + 본문)
+
+---\n\n{INPUT}`,
+  verification: `다음 텍스트를 학습한 사람이 진짜 이해했는지 점검하는 검증 질문 5-7개를 만들어주세요.
+- 단순 암기가 아니라 설명/응용/연결을 요구하는 질문
+- 다양한 난이도와 사고 깊이
+- 출력은 반드시 JSON 배열 형식: ["질문1", "질문2", ...]
+- JSON만 출력하세요. 다른 텍스트 없이.
+
+---\n\n{INPUT}`,
+};
+
+// ============ STATE ============
+const state = {
+  apiKey: null,
+  model: 'claude-sonnet-4-6',
+  input: '',
+  selectedStages: new Set(STAGES.map(s => s.id)),
+  results: {},
+};
+
+const SAMPLE_TEXT = `Git Fetch와 Git Pull은 모두 원격 저장소의 변경사항을 가져오는 명령어지만 동작 방식이 다르다. Git Fetch는 원격 저장소의 변경사항을 로컬의 추적 브랜치(origin/main 등)로만 가져오고 현재 작업 브랜치는 건드리지 않는다. 반면 Git Pull은 Fetch + Merge를 한 번에 수행한다. 즉 원격 변경사항을 가져온 뒤 곧바로 현재 브랜치에 병합한다. Fetch는 "확인만"이고 Pull은 "확인 + 적용"이다. 협업 워크플로우에서는 Fetch를 먼저 하고 변경사항을 살펴본 뒤 의도적으로 Merge나 Rebase를 결정하는 패턴이 안전하다.`;
+
+// ============ STORAGE ============
+function loadFromStorage() {
+  try {
+    state.apiKey = localStorage.getItem('loop_apikey') || null;
+    state.model = localStorage.getItem('loop_model') || 'claude-sonnet-4-6';
+  } catch {}
+}
+function saveSettings() {
+  if (state.apiKey) localStorage.setItem('loop_apikey', state.apiKey);
+  else localStorage.removeItem('loop_apikey');
+  localStorage.setItem('loop_model', state.model);
+}
+
+// ============ MARKDOWN ============
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function inline(s) {
+  s = escapeHtml(s);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*(?!\*)/g, '$1<em>$2</em>');
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  return s;
+}
+function renderMarkdown(md) {
+  const lines = (md || '').split('\n');
+  let html = '';
+  let inTable = false;
+  let listType = null;
+  let inCode = false;
+  let codeBuf = [];
+  const closeList = () => { if (listType) { html += `</${listType}>`; listType = null; } };
+  const closeTable = () => { if (inTable) { html += '</tbody></table>'; inTable = false; } };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim().startsWith('```')) {
+      if (inCode) {
+        html += `<pre><code>${escapeHtml(codeBuf.join('\n'))}</code></pre>`;
+        codeBuf = []; inCode = false;
+      } else {
+        closeList(); closeTable(); inCode = true;
+      }
+      continue;
+    }
+    if (inCode) { codeBuf.push(line); continue; }
+
+    if (line.includes('|') && lines[i + 1] && /^\s*\|?[-:\s|]+\|?\s*$/.test(lines[i + 1])) {
+      closeList();
+      const cells = line.split('|').map(c => c.trim());
+      if (cells[0] === '') cells.shift();
+      if (cells.length && cells[cells.length - 1] === '') cells.pop();
+      html += '<table><thead><tr>' + cells.map(c => `<th>${inline(c)}</th>`).join('') + '</tr></thead><tbody>';
+      inTable = true;
+      i++;
+      continue;
+    }
+    if (inTable) {
+      if (line.includes('|')) {
+        const cells = line.split('|').map(c => c.trim());
+        if (cells[0] === '') cells.shift();
+        if (cells.length && cells[cells.length - 1] === '') cells.pop();
+        html += '<tr>' + cells.map(c => `<td>${inline(c)}</td>`).join('') + '</tr>';
+        continue;
+      } else {
+        closeTable();
+      }
+    }
+
+    let m;
+    if ((m = line.match(/^(#{1,4})\s+(.*)$/))) {
+      closeList();
+      html += `<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`;
+      continue;
+    }
+    if (line.startsWith('> ')) {
+      closeList();
+      html += `<blockquote>${inline(line.slice(2))}</blockquote>`;
+      continue;
+    }
+    if ((m = line.match(/^\s*[-*]\s+(.*)$/))) {
+      if (listType !== 'ul') { closeList(); html += '<ul>'; listType = 'ul'; }
+      html += `<li>${inline(m[1])}</li>`;
+      continue;
+    }
+    if ((m = line.match(/^\s*\d+\.\s+(.*)$/))) {
+      if (listType !== 'ol') { closeList(); html += '<ol>'; listType = 'ol'; }
+      html += `<li>${inline(m[1])}</li>`;
+      continue;
+    }
+    if (line.trim() === '') { closeList(); continue; }
+    closeList();
+    html += `<p>${inline(line)}</p>`;
+  }
+  closeList(); closeTable();
+  if (inCode) html += `<pre><code>${escapeHtml(codeBuf.join('\n'))}</code></pre>`;
+  return html;
+}
+
+// ============ SVG SANITIZATION ============
+function sanitizeSvg(svg) {
+  // Strip <script>, on* event handlers, and javascript: URLs
+  let s = svg.replace(/<script[\s\S]*?<\/script>/gi, '');
+  s = s.replace(/\son\w+\s*=\s*"[^"]*"/gi, '');
+  s = s.replace(/\son\w+\s*=\s*'[^']*'/gi, '');
+  s = s.replace(/javascript:/gi, '');
+  return s;
+}
+
+// ============ RENDER ============
+function renderStageGrid() {
+  const grid = document.getElementById('stageGrid');
+  grid.innerHTML = STAGES.map(s => `
+    <button class="stage-chip ${state.selectedStages.has(s.id) ? 'selected' : ''}" data-id="${s.id}" type="button">
+      <span class="stage-icon">${s.num}</span>
+      <div class="stage-name">${s.name}</div>
+      <div class="stage-desc">${s.desc}</div>
+    </button>
+  `).join('');
+  grid.querySelectorAll('.stage-chip').forEach(el => {
+    el.addEventListener('click', () => toggleStage(el.dataset.id));
+  });
+  document.getElementById('selectedCount').textContent = state.selectedStages.size;
+  updateConvertBtn();
+}
+function toggleStage(id) {
+  if (state.selectedStages.has(id)) state.selectedStages.delete(id);
+  else state.selectedStages.add(id);
+  renderStageGrid();
+}
+function updateConvertBtn() {
+  document.getElementById('convertBtn').disabled =
+    state.selectedStages.size === 0 || !state.input.trim();
+}
+function updateModeBadge() {
+  const badge = document.getElementById('headerMode');
+  if (state.apiKey) {
+    badge.textContent = 'API · ' + state.model.replace('claude-', '');
+    badge.classList.add('api');
+  } else {
+    badge.textContent = '데모 모드';
+    badge.classList.remove('api');
+  }
+}
+
+function renderResults() {
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+
+  for (const s of STAGES) {
+    if (!state.selectedStages.has(s.id)) continue;
+    const r = state.results[s.id] || { status: 'pending' };
+
+    const card = document.createElement('div');
+    card.className = 'result-card' + (s.fullWidth ? ' full-width' : '');
+
+    let inner = '';
+    if (r.status === 'pending' || r.status === 'loading') {
+      inner = `<div class="result-loading"><div class="spinner"></div><div>${r.status === 'loading' ? '변환 중…' : '대기 중'}</div></div>`;
+    } else if (r.status === 'error') {
+      inner = `<div class="result-error">⚠ ${escapeHtml(r.error || '변환 실패')}</div>`;
+    } else if (s.mode === 'svg') {
+      inner = `<div class="result-content">${sanitizeSvg(r.data)}</div>`;
+    } else if (s.mode === 'questions') {
+      const qs = Array.isArray(r.data) ? r.data : [];
+      inner = `<div class="result-content"><ol class="verify-list">${qs.map(q => `<li>${escapeHtml(q)}</li>`).join('')}</ol></div>`;
+    } else {
+      inner = `<div class="result-content">${renderMarkdown(r.data)}</div>`;
+    }
+
+    card.innerHTML = `
+      <div class="result-card-header">
+        <div class="result-card-icon">${s.num}</div>
+        <div>
+          <div class="result-card-title">${s.name}</div>
+          <div class="result-card-sub">${s.desc}</div>
+        </div>
+      </div>
+      ${inner}
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// ============ API ============
+async function callClaude(prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': state.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: state.model,
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    }),
+  });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try {
+      const err = await res.json();
+      if (err.error && err.error.message) msg = err.error.message;
+    } catch {}
+    throw new Error(msg);
+  }
+  const data = await res.json();
+  const textBlock = (data.content || []).find(b => b.type === 'text');
+  return textBlock ? textBlock.text : '';
+}
+function extractSvg(text) {
+  const m = text.match(/<svg[\s\S]*?<\/svg>/i);
+  return m ? m[0] : text;
+}
+function extractJsonArray(text) {
+  const m = text.match(/\[[\s\S]*\]/);
+  if (!m) return null;
+  try { return JSON.parse(m[0]); } catch { return null; }
+}
+
+async function runStage(stage) {
+  state.results[stage.id] = { status: 'loading' };
+  renderResults();
+
+  try {
+    if (!state.apiKey) {
+      await new Promise(r => setTimeout(r, 600 + Math.random() * 900));
+      state.results[stage.id] = { status: 'ok', data: DEMO_OUTPUTS[stage.id] };
+    } else {
+      const prompt = PROMPTS[stage.id].replace('{INPUT}', state.input);
+      const text = await callClaude(prompt);
+      let data = text;
+      if (stage.mode === 'svg') data = extractSvg(text);
+      else if (stage.mode === 'questions') {
+        data = extractJsonArray(text);
+        if (!data) throw new Error('JSON 응답 파싱 실패');
+      }
+      state.results[stage.id] = { status: 'ok', data };
+    }
+  } catch (e) {
+    state.results[stage.id] = { status: 'error', error: e.message || String(e) };
+  }
+  renderResults();
+}
+
+async function startConvert() {
+  if (!state.input.trim() || state.selectedStages.size === 0) return;
+  state.results = {};
+  for (const s of STAGES) {
+    if (state.selectedStages.has(s.id)) state.results[s.id] = { status: 'pending' };
+  }
+  document.getElementById('inputPhase').style.display = 'none';
+  document.getElementById('resultsPhase').style.display = 'block';
+  const preview = state.input.replace(/\s+/g, ' ').trim().slice(0, 120);
+  document.getElementById('sourcePreview').textContent =
+    preview + (state.input.length > 120 ? '…' : '');
+  renderResults();
+
+  const tasks = STAGES.filter(s => state.selectedStages.has(s.id)).map(s => runStage(s));
+  await Promise.all(tasks);
+}
+
+// ============ DEMO ============
+const DEMO_OUTPUTS = {
+  structure: `| 항목 | Git Fetch | Git Pull |
+| --- | --- | --- |
+| 동작 | 원격 변경을 로컬 추적 브랜치로만 가져옴 | Fetch + Merge를 한 번에 |
+| 작업 브랜치 영향 | 없음 (안전) | 즉시 병합됨 |
+| 충돌 가능성 | 낮음 (확인만) | 있음 (자동 병합) |
+| 권장 상황 | 변경사항을 먼저 살펴보고 싶을 때 | 단순/명확한 동기화 |
+| 한 줄 요약 | "확인만" | "확인 + 적용" |`,
+
+  visualization: `<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" style="font-family: sans-serif;">
+  <defs>
+    <marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#2D1B4E"/>
+    </marker>
+  </defs>
+  <text x="400" y="36" text-anchor="middle" fill="#2D1B4E" font-size="18" font-weight="700">Fetch vs Pull — 동작 흐름</text>
+
+  <rect x="40" y="210" width="160" height="100" rx="14" fill="#2D1B4E"/>
+  <text x="120" y="250" text-anchor="middle" fill="#FFC971" font-weight="700" font-size="16">원격 저장소</text>
+  <text x="120" y="275" text-anchor="middle" fill="#FFFFFF" font-size="12">(origin)</text>
+
+  <rect x="320" y="80" width="180" height="100" rx="14" fill="#F4845F"/>
+  <text x="410" y="118" text-anchor="middle" fill="#FFFFFF" font-weight="700" font-size="17">git fetch</text>
+  <text x="410" y="142" text-anchor="middle" fill="#FFFFFF" font-size="12">"확인만"</text>
+  <text x="410" y="162" text-anchor="middle" fill="#FFFFFF" font-size="12">→ 추적 브랜치로</text>
+
+  <rect x="320" y="330" width="180" height="100" rx="14" fill="#84B59F"/>
+  <text x="410" y="368" text-anchor="middle" fill="#FFFFFF" font-weight="700" font-size="17">git pull</text>
+  <text x="410" y="392" text-anchor="middle" fill="#FFFFFF" font-size="12">"확인 + 적용"</text>
+  <text x="410" y="412" text-anchor="middle" fill="#FFFFFF" font-size="12">= fetch + merge</text>
+
+  <rect x="600" y="80" width="160" height="100" rx="14" fill="#FFC971"/>
+  <text x="680" y="120" text-anchor="middle" fill="#2D1B4E" font-weight="700" font-size="14">추적 브랜치</text>
+  <text x="680" y="142" text-anchor="middle" fill="#2D1B4E" font-size="11">origin/main</text>
+  <text x="680" y="162" text-anchor="middle" fill="#2D1B4E" font-size="11">(작업브랜치 안전)</text>
+
+  <rect x="600" y="330" width="160" height="100" rx="14" fill="#FFC971"/>
+  <text x="680" y="370" text-anchor="middle" fill="#2D1B4E" font-weight="700" font-size="14">작업 브랜치</text>
+  <text x="680" y="392" text-anchor="middle" fill="#2D1B4E" font-size="11">main</text>
+  <text x="680" y="412" text-anchor="middle" fill="#2D1B4E" font-size="11">(자동 병합됨)</text>
+
+  <line x1="200" y1="240" x2="315" y2="130" stroke="#2D1B4E" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="200" y1="280" x2="315" y2="380" stroke="#2D1B4E" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="500" y1="130" x2="595" y2="130" stroke="#2D1B4E" stroke-width="2" marker-end="url(#arr)"/>
+  <line x1="500" y1="380" x2="595" y2="380" stroke="#2D1B4E" stroke-width="2" marker-end="url(#arr)"/>
+
+  <text x="400" y="478" text-anchor="middle" fill="#6B6B7C" font-size="12" font-style="italic">Fetch = 확인만 / Pull = 확인 + 적용</text>
+</svg>`,
+
+  analogy: `### 우편함과 우편물 정리
+
+**Git Fetch는 우편함 확인**과 같습니다.
+- 우편함(원격 저장소)에 새 편지가 왔는지 **확인만** 합니다.
+- 편지를 가져오긴 하지만 **책상(작업 브랜치)에는 올리지 않고** 현관 옆 트레이(추적 브랜치)에 모아둡니다.
+- 내가 지금 하던 일은 그대로 유지됩니다.
+
+**Git Pull은 우편물을 가져와서 바로 책상에 펼치는 것**과 같습니다.
+- 확인 + 가져오기 + **지금 보던 서류 위에 펼치기**가 한 번에 일어납니다.
+- 빠르고 편하지만, 펼친 새 편지가 기존 서류와 **겹치면 어디서 충돌하는지** 곧바로 정리해야 합니다.
+
+### 대응 관계
+- 우편함 = **원격 저장소(origin)**
+- 현관 트레이 = **추적 브랜치(origin/main)**
+- 책상 = **현재 작업 브랜치**
+- 편지 펼치기 = **merge**`,
+
+  perspective: `### 안전성 관점 (방어적 코더)
+Fetch는 "관찰 후 결정", Pull은 "관찰과 결정의 동시 실행". 운영 환경에 가까운 브랜치를 다룰수록 Fetch를 선호한다. 충돌이 발생했을 때 **이미 적용된 상태**에서 수습하는 것보다, 적용 전에 의도적으로 멈출 수 있는 쪽이 훨씬 안전하다.
+
+### 효율성 관점 (속도주의자)
+혼자 작업하거나 충돌 가능성이 거의 없는 브랜치라면 Pull 한 줄이 두 줄보다 낫다. **반복 작업의 마찰**을 줄이는 것이 협업 비용을 줄이는 가장 큰 레버리지다. Fetch + Merge로 분리하는 것은 작은 팀에선 과한 의식(ritual)일 수 있다.
+
+### 학습 관점 (메타 학습자)
+이 명령어 비교는 단지 Git 지식이 아니라 **"부수효과를 명령에 포함시킬 것인가, 분리할 것인가"**라는 소프트웨어 설계의 일반 원리를 보여준다. 같은 패턴이 데이터베이스 트랜잭션, 함수형 프로그래밍의 순수성 원칙, REST API의 멱등성 설계에도 등장한다.`,
+
+  connection: `### → 데이터베이스의 \`SELECT\` vs \`UPDATE\`
+Fetch는 **읽기만 하는 쿼리**처럼 시스템 상태를 바꾸지 않는다. Pull은 **읽고 즉시 쓰는 트랜잭션**과 비슷하다. "조회와 변경을 분리한다"는 원칙이 두 도메인 모두에 통한다.
+
+### → 함수형 프로그래밍의 순수 함수
+Fetch는 **부수효과 없는 함수**, Pull은 **부수효과 있는 절차**. 함수형 언어가 부수효과를 명시적으로 분리하라고 하는 이유와 Fetch + Merge 분리를 권장하는 이유는 같다 — **예측 가능성**.
+
+### → "두 단계 의사결정"의 일반 패턴
+의료(검진 → 처치), 법률(증거 수집 → 판결), UX(미리보기 → 확정 클릭). **"확인 단계와 실행 단계를 분리하면 되돌리기 비용이 줄어든다"**는 원리의 한 사례.
+
+### → 비동기 메시지 큐의 peek vs consume
+Fetch는 큐에서 메시지를 **peek**하는 것에, Pull은 **consume**하는 것에 대응한다. 분산 시스템에서 동일한 트레이드오프가 반복된다.`,
+
+  creation: `### 1. "Pull-Safe" Git 별칭
+\`git pull\`을 항상 \`git fetch && git log HEAD..@{u} --oneline\`으로 치환하는 별칭을 만든다. **변경 요약을 보여준 뒤 사용자가 직접 merge/rebase를 결정**하게 한다. Pull의 편의성과 Fetch의 안전성을 합친 워크플로우.
+
+### 2. 학습용 Git 시뮬레이터 게임
+플레이어에게 매 라운드마다 원격 변경사항이 주어지고, **Fetch 카드와 Pull 카드 중 하나를 선택**해서 진행한다. 잘못된 선택은 충돌 페널티로 이어진다. 안전성과 속도의 트레이드오프를 체화시키는 학습 도구.
+
+### 3. "부수효과 명시도" 평가 프레임워크
+Git 명령어를 부수효과 강도순으로 5단계로 분류하고, 각 명령어에 색상 코딩을 적용한 터미널 플러그인. **Fetch(녹색, 안전)부터 force push(빨강, 위험)까지** 시각적으로 학습한다. CLI 도구 전반에 일반화 가능한 아이디어.`,
+
+  verification: [
+    "Fetch만 했을 때와 Pull을 했을 때, 내 작업 브랜치의 상태는 각각 어떻게 다른가요?",
+    "팀원 A가 \"왜 굳이 Fetch를 따로 써? Pull이 더 빠르잖아\"라고 묻는다면 어떻게 설득하겠어요?",
+    "Pull 대신 Fetch + Rebase를 쓰는 워크플로우가 적절한 상황을 한 가지 들어 설명해보세요.",
+    "Fetch와 Pull의 차이를 '부수효과'라는 개념으로 다시 설명해보세요.",
+    "원격 브랜치 origin/main과 로컬 브랜치 main은 어떤 관계인가요? Fetch는 이 둘 중 무엇을 갱신하나요?",
+    "Pull 도중 충돌이 발생했을 때, '미리 Fetch를 했더라면 피할 수 있었을지'를 판단할 수 있나요?",
+    "Git Fetch vs Pull의 트레이드오프와 비슷한 구조를 가진 다른 도구나 개념을 하나 들어 비교해보세요."
+  ]
+};
+
+// ============ TOAST ============
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// ============ EVENTS ============
+function setupEvents() {
+  const ta = document.getElementById('inputText');
+  ta.addEventListener('input', () => {
+    state.input = ta.value;
+    document.getElementById('charCount').textContent = ta.value.length;
+    updateConvertBtn();
+  });
+
+  document.getElementById('pasteBtn').addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      ta.value = text;
+      ta.dispatchEvent(new Event('input'));
+      toast('붙여넣기 완료');
+    } catch {
+      toast('클립보드 권한이 필요합니다. Ctrl+V로 직접 붙여넣어주세요.');
+    }
+  });
+  document.getElementById('sampleBtn').addEventListener('click', () => {
+    ta.value = SAMPLE_TEXT;
+    ta.dispatchEvent(new Event('input'));
+  });
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    ta.value = '';
+    ta.dispatchEvent(new Event('input'));
+  });
+
+  document.getElementById('selectAll').addEventListener('click', () => {
+    state.selectedStages = new Set(STAGES.map(s => s.id));
+    renderStageGrid();
+  });
+  document.getElementById('selectNone').addEventListener('click', () => {
+    state.selectedStages = new Set();
+    renderStageGrid();
+  });
+
+  document.getElementById('convertBtn').addEventListener('click', startConvert);
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    document.getElementById('inputPhase').style.display = '';
+    document.getElementById('resultsPhase').style.display = 'none';
+  });
+
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    document.getElementById('apiKeyInput').value = state.apiKey || '';
+    document.getElementById('modelSelect').value = state.model;
+    document.getElementById('settingsModal').classList.add('active');
+  });
+  document.getElementById('modalClose').addEventListener('click', () => {
+    document.getElementById('settingsModal').classList.remove('active');
+  });
+  document.getElementById('modalSave').addEventListener('click', () => {
+    state.apiKey = document.getElementById('apiKeyInput').value.trim() || null;
+    state.model = document.getElementById('modelSelect').value;
+    saveSettings();
+    document.getElementById('settingsModal').classList.remove('active');
+    updateModeBadge();
+    toast(state.apiKey ? 'API 모드 활성화' : '데모 모드로 동작합니다');
+  });
+}
+
+// ============ INIT ============
+function init() {
+  loadFromStorage();
+  setupEvents();
+  renderStageGrid();
+  updateModeBadge();
+}
+init();
+</script>
+</body>
+</html>
